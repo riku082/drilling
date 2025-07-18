@@ -339,6 +339,11 @@
                     <div class="energy-fill" id="drillEnergy"></div>
                 </div>
                 <div style="font-size: 12px;">ドリル耐久度</div>
+                
+                <div class="energy-bar" style="margin-top: 10px;">
+                    <div class="energy-fill" id="beamEnergy"></div>
+                </div>
+                <div style="font-size: 12px;">泥水ビーム <span id="beamStatus">充電中...</span></div>
                 <div id="warningText" class="warning" style="display: none;">⚠️ 高温注意！</div>
             </div>
         </div>
@@ -349,7 +354,8 @@
                 <p>自動で地球の深部へ掘り進みます！</p>
                 <p>← → キーで掘削機を左右に移動して障害物を避けよう</p>
                 <p>岩にぶつかるとドリルが消耗します</p>
-                <p>蒸気孔に近づくとボーナスエネルギー獲得！</p>
+                <p>🛢️ オイルポケットでドリル耐久度が回復！</p>
+                <p>💧 泥水ビームゲージが溜まったらスペースキーで障害物を破壊！</p>
                 <p>より深く掘るほど高温になり、多くのエネルギーを獲得できます</p>
             </div>
             <button onclick="startGame()">ゲームスタート</button>
@@ -425,11 +431,16 @@
             drillSpeed: 2.5, // 初期速度を2.5倍に増加
             drillDurability: 100,
             drillMaxDurability: 100,
+            beamEnergy: 0, // ビームエネルギー
+            beamMaxEnergy: 100, // 最大ビームエネルギー
+            beamChargeRate: 0.15, // ビーム充電速度
+            beams: [], // 発射中のビーム
             particles: [],
             rocks: [],
             steamVents: [],
             magmaPools: [],
             faults: [], // 断層
+            oilPockets: [], // オイルポケット
             moles: [], // もぐら
             pipeSegments: [], // ドリルパイプのセグメント
             maxDepth: 0,
@@ -439,6 +450,222 @@
         };
         
         const keys = {};
+        
+        class Beam {
+            constructor(x, y, direction) {
+                this.x = x;
+                this.y = y;
+                this.startX = x;
+                this.startY = y;
+                this.direction = direction; // 角度（ラジアン）
+                this.speed = 15; // ビーム速度
+                this.width = 8; // ビーム幅
+                this.length = 60; // ビーム長さ
+                this.life = 1.0; // ビームの生存時間
+                this.power = 50; // 破壊力
+                this.particles = [];
+                this.hasHit = false;
+            }
+            
+            update() {
+                // ビームの移動
+                this.x += Math.cos(this.direction) * this.speed;
+                this.y += Math.sin(this.direction) * this.speed;
+                
+                // 生存時間の減少
+                this.life -= 0.02;
+                
+                // ビームパーティクルの生成
+                if (Math.random() < 0.8) {
+                    this.particles.push({
+                        x: this.x + (Math.random() - 0.5) * this.width,
+                        y: this.y + (Math.random() - 0.5) * this.width,
+                        vx: (Math.random() - 0.5) * 2,
+                        vy: (Math.random() - 0.5) * 2,
+                        life: 1,
+                        size: Math.random() * 3 + 1
+                    });
+                }
+                
+                // パーティクル更新
+                this.particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.life -= 0.05;
+                    p.size *= 0.95;
+                });
+                
+                this.particles = this.particles.filter(p => p.life > 0);
+                
+                // 障害物との衝突チェック
+                this.checkCollisions();
+            }
+            
+            checkCollisions() {
+                if (this.hasHit) return;
+                
+                // 岩との衝突
+                for (let i = game.rocks.length - 1; i >= 0; i--) {
+                    const rock = game.rocks[i];
+                    if (!rock.hit && this.isCollidingWithRock(rock)) {
+                        this.destroyRock(rock, i);
+                        this.hasHit = true;
+                        this.life = 0.3; // 短い残存時間
+                        break;
+                    }
+                }
+                
+                // 断層との衝突
+                for (let i = game.faults.length - 1; i >= 0; i--) {
+                    const fault = game.faults[i];
+                    if (this.isCollidingWithFault(fault)) {
+                        this.destroyFault(fault, i);
+                        this.hasHit = true;
+                        this.life = 0.3;
+                        break;
+                    }
+                }
+                
+                // もぐらとの衝突
+                for (let i = game.moles.length - 1; i >= 0; i--) {
+                    const mole = game.moles[i];
+                    if (this.isCollidingWithMole(mole)) {
+                        this.destroyMole(mole, i);
+                        this.hasHit = true;
+                        this.life = 0.3;
+                        break;
+                    }
+                }
+            }
+            
+            isCollidingWithRock(rock) {
+                const distance = Math.sqrt(
+                    Math.pow(this.x - rock.x, 2) + 
+                    Math.pow(this.y - rock.y, 2)
+                );
+                return distance < (Math.max(rock.width, rock.height) / 2 + this.width);
+            }
+            
+            isCollidingWithFault(fault) {
+                return fault.checkCrackCollision(this.x, this.y, this.width * 2, this.width * 2);
+            }
+            
+            isCollidingWithMole(mole) {
+                const distance = Math.sqrt(
+                    Math.pow(this.x - mole.x, 2) + 
+                    Math.pow(this.y - mole.y, 2)
+                );
+                return distance < (Math.max(mole.width, mole.height) / 2 + this.width);
+            }
+            
+            destroyRock(rock, index) {
+                // 岩を配列から完全に削除
+                game.rocks.splice(index, 1);
+                
+                // 破壊エフェクト
+                for (let i = 0; i < 30; i++) {
+                    game.particles.push(new Particle(
+                        rock.x + (Math.random() - 0.5) * rock.width,
+                        rock.y + (Math.random() - 0.5) * rock.height,
+                        Math.random() < 0.6 ? 'rock' : 'spark'
+                    ));
+                }
+                
+                // 画面の揺れ効果
+                canvas.style.transform = `translate(${Math.random() * 20 - 10}px, ${Math.random() * 20 - 10}px)`;
+                setTimeout(() => canvas.style.transform = '', 250);
+                
+                console.log(`岩石を破壊！残り岩石数: ${game.rocks.length}`);
+            }
+            
+            destroyFault(fault, index) {
+                // 断層を配列から完全に削除
+                game.faults.splice(index, 1);
+                
+                // 断層破壊エフェクト
+                for (let i = 0; i < 35; i++) {
+                    game.particles.push(new Particle(
+                        fault.startX + Math.random() * 100 - 50,
+                        fault.y + Math.random() * 100 - 50,
+                        Math.random() < 0.5 ? 'spark' : 'rock'
+                    ));
+                }
+                
+                // より強い画面揺れ
+                canvas.style.transform = `translate(${Math.random() * 25 - 12.5}px, ${Math.random() * 25 - 12.5}px)`;
+                setTimeout(() => canvas.style.transform = '', 300);
+                
+                console.log(`断層を破壊！残り断層数: ${game.faults.length}`);
+            }
+            
+            destroyMole(mole, index) {
+                // もぐらを配列から完全に削除
+                game.moles.splice(index, 1);
+                
+                // もぐら破壊エフェクト（土のパーティクル）
+                for (let i = 0; i < 20; i++) {
+                    game.particles.push(new Particle(
+                        mole.x + (Math.random() - 0.5) * mole.width,
+                        mole.y + (Math.random() - 0.5) * mole.height,
+                        'rock'
+                    ));
+                }
+                
+                console.log(`もぐらを除去！残りもぐら数: ${game.moles.length}`);
+            }
+            
+            draw() {
+                const screenY = this.y - game.cameraY;
+                const startScreenY = this.startY - game.cameraY;
+                
+                if (screenY < -50 || screenY > canvas.height + 50) return;
+                
+                ctx.save();
+                
+                // 泥水ビーム本体（茶色系のグラデーション）
+                const beamGradient = ctx.createLinearGradient(
+                    this.startX, startScreenY,
+                    this.x, screenY
+                );
+                beamGradient.addColorStop(0, `rgba(139, 69, 19, ${this.life * 0.4})`); // 濃い茶色
+                beamGradient.addColorStop(0.5, `rgba(160, 82, 45, ${this.life * 0.8})`); // 中間の茶色
+                beamGradient.addColorStop(1, `rgba(210, 180, 140, ${this.life})`); // 明るい茶色
+                
+                ctx.strokeStyle = beamGradient;
+                ctx.lineWidth = this.width;
+                ctx.lineCap = 'round';
+                ctx.shadowBlur = 12;
+                ctx.shadowColor = '#8B4513';
+                
+                ctx.beginPath();
+                ctx.moveTo(this.startX, startScreenY);
+                ctx.lineTo(this.x, screenY);
+                ctx.stroke();
+                
+                // 泥水ビームの中心線（水分を表現）
+                ctx.strokeStyle = `rgba(135, 206, 235, ${this.life * 0.6})`; // 水色
+                ctx.lineWidth = this.width * 0.2;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = '#87CEEB';
+                
+                ctx.beginPath();
+                ctx.moveTo(this.startX, startScreenY);
+                ctx.lineTo(this.x, screenY);
+                ctx.stroke();
+                
+                // 泥水パーティクル（茶色と水色の混合）
+                this.particles.forEach(p => {
+                    ctx.globalAlpha = p.life * this.life;
+                    // ランダムで泥か水のパーティクル
+                    ctx.fillStyle = Math.random() < 0.7 ? '#8B4513' : '#87CEEB';
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y - game.cameraY, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                
+                ctx.restore();
+            }
+        }
         
         class Particle {
             constructor(x, y, type) {
@@ -524,17 +751,19 @@
                 ctx.save();
                 ctx.translate(this.x, screenY);
                 if (this.hit) {
-                    ctx.globalAlpha = 0.5;
+                    ctx.globalAlpha = 0.7;
                 }
                 
-                // Base rock color with gradient
+                // 硬質岩石の色 - 黒から濃いグレーのグラデーション
                 const gradient = ctx.createLinearGradient(0, -this.height / 2, 0, this.height / 2);
-                gradient.addColorStop(0, `rgba(150, 75, 0, ${0.8 / this.hardness})`); // Lighter brown
-                gradient.addColorStop(0.5, `rgba(139, 69, 19, ${0.8 / this.hardness})`); // Medium brown
-                gradient.addColorStop(1, `rgba(100, 50, 0, ${0.8 / this.hardness})`); // Darker brown
+                const baseOpacity = 0.9; // より不透明に
+                gradient.addColorStop(0, `rgba(64, 64, 64, ${baseOpacity})`); // 濃いグレー
+                gradient.addColorStop(0.3, `rgba(32, 32, 32, ${baseOpacity})`); // より暗いグレー
+                gradient.addColorStop(0.7, `rgba(16, 16, 16, ${baseOpacity})`); // 非常に暗いグレー
+                gradient.addColorStop(1, `rgba(8, 8, 8, ${baseOpacity})`); // ほぼ黒
                 ctx.fillStyle = gradient;
 
-                // Draw irregular shape
+                // 不規則な硬質岩石の形状を描画
                 ctx.beginPath();
                 ctx.moveTo(this.points[0].x, this.points[0].y);
                 for (let i = 1; i < this.points.length; i++) {
@@ -543,20 +772,46 @@
                 ctx.closePath();
                 ctx.fill();
 
-                // Add some texture/noise
-                ctx.fillStyle = `rgba(0, 0, 0, ${0.1 / this.hardness})`;
-                for (let i = 0; i < 10; i++) {
+                // 硬質岩石の結晶構造を表現（小さな明るい点）
+                ctx.fillStyle = `rgba(128, 128, 128, 0.4)`;
+                for (let i = 0; i < 8; i++) {
+                    const x = (Math.random() - 0.5) * this.width * 0.8;
+                    const y = (Math.random() - 0.5) * this.height * 0.8;
+                    const size = Math.random() * 2 + 1;
                     ctx.beginPath();
-                    ctx.arc(Math.random() * this.width - this.width / 2, Math.random() * this.height - this.height / 2, Math.random() * 5, 0, Math.PI * 2);
+                    ctx.arc(x, y, size, 0, Math.PI * 2);
                     ctx.fill();
                 }
 
-                // Gold outline and shadow
-                ctx.shadowColor = '#000';
-                ctx.shadowBlur = 15;
-                ctx.strokeStyle = '#FFD700'; // Gold outline
-                ctx.lineWidth = 3;
+                // 鉱物の微細な光沢（非常に控えめ）
+                ctx.fillStyle = `rgba(192, 192, 192, 0.1)`;
+                for (let i = 0; i < 3; i++) {
+                    const x = (Math.random() - 0.5) * this.width * 0.6;
+                    const y = (Math.random() - 0.5) * this.height * 0.6;
+                    const size = Math.random() * 1.5 + 0.5;
+                    ctx.beginPath();
+                    ctx.arc(x, y, size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // 硬質岩石の暗い輪郭線
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+                ctx.shadowBlur = 8;
+                ctx.strokeStyle = '#2F2F2F'; // 暗いグレーの輪郭
+                ctx.lineWidth = 2;
                 ctx.stroke();
+                
+                // 硬度が高い場合の追加的な暗さ
+                if (this.hardness > 2) {
+                    ctx.fillStyle = `rgba(0, 0, 0, ${0.2 * (this.hardness - 2)})`;
+                    ctx.beginPath();
+                    ctx.moveTo(this.points[0].x, this.points[0].y);
+                    for (let i = 1; i < this.points.length; i++) {
+                        ctx.lineTo(this.points[i].x, this.points[i].y);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                }
                 
                 ctx.restore();
             }
@@ -617,6 +872,230 @@
             }
         }
         
+        class OilPocket {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.width = Math.random() * 80 + 60; // 60-140px
+                this.height = Math.random() * 60 + 40; // 40-100px
+                this.hit = false;
+                this.collected = false;
+                this.particles = [];
+                this.animationTime = 0;
+                this.oilLevel = 1.0; // オイルの量（1.0 = 満タン）
+                this.healAmount = 30 + Math.random() * 20; // 30-50の回復量
+            }
+            
+            update() {
+                this.animationTime++;
+                
+                // オイルパーティクルの生成
+                if (!this.collected && Math.random() < 0.1) {
+                    this.particles.push({
+                        x: this.x + (Math.random() - 0.5) * this.width,
+                        y: this.y + (Math.random() - 0.5) * this.height,
+                        vx: (Math.random() - 0.5) * 0.5,
+                        vy: (Math.random() - 0.5) * 0.5,
+                        life: 1,
+                        size: Math.random() * 3 + 2
+                    });
+                }
+                
+                // パーティクル更新
+                this.particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.life -= 0.01;
+                    p.size *= 0.99;
+                });
+                
+                this.particles = this.particles.filter(p => p.life > 0);
+            }
+            
+            draw() {
+                const screenY = this.y - game.cameraY;
+                
+                if (screenY < -100 || screenY > canvas.height + 100) return;
+                
+                ctx.save();
+                ctx.translate(this.x, screenY);
+                
+                if (!this.collected) {
+                    // キャップロック（上部の硬い岩盤層）- より自然な形状
+                    const capRockHeight = this.height * 0.25;
+                    
+                    // キャップロックの不規則な形状を作成
+                    ctx.fillStyle = '#708090'; // より自然なグレー
+                    ctx.beginPath();
+                    ctx.moveTo(-this.width/2, -this.height/2);
+                    
+                    // 不規則な上面
+                    for (let i = 0; i <= 8; i++) {
+                        const x = (-this.width/2) + (this.width * i / 8);
+                        const yVariation = (Math.sin(this.x * 0.01 + i * 0.8) + Math.cos(this.y * 0.005 + i * 1.2)) * 3;
+                        ctx.lineTo(x, -this.height/2 + yVariation);
+                    }
+                    
+                    // 右側
+                    ctx.lineTo(this.width/2, -this.height/2 + capRockHeight);
+                    
+                    // 不規則な下面（オイル層との境界）
+                    for (let i = 8; i >= 0; i--) {
+                        const x = (-this.width/2) + (this.width * i / 8);
+                        const yVariation = (Math.sin(this.x * 0.008 + i * 1.1) + Math.cos(this.y * 0.006 + i * 0.9)) * 5;
+                        ctx.lineTo(x, -this.height/2 + capRockHeight + yVariation);
+                    }
+                    
+                    // 左側
+                    ctx.lineTo(-this.width/2, -this.height/2);
+                    ctx.fill();
+                    
+                    // キャップロックの層理構造
+                    ctx.strokeStyle = 'rgba(105, 105, 105, 0.3)';
+                    ctx.lineWidth = 1;
+                    for (let i = 1; i < 4; i++) {
+                        const layerY = -this.height/2 + (capRockHeight * i / 4);
+                        ctx.beginPath();
+                        ctx.moveTo(-this.width/2 + 5, layerY);
+                        for (let j = 0; j <= 6; j++) {
+                            const x = (-this.width/2 + 5) + ((this.width - 10) * j / 6);
+                            const variation = Math.sin(this.x * 0.02 + j * 0.5) * 2;
+                            ctx.lineTo(x, layerY + variation);
+                        }
+                        ctx.stroke();
+                    }
+                    
+                    // 多孔質な貯留層（より自然な形状）
+                    const reservoirTop = -this.height/2 + capRockHeight;
+                    const reservoirHeight = this.height * 0.75;
+                    
+                    // 背景の岩石層
+                    const rockGradient = ctx.createLinearGradient(0, reservoirTop, 0, reservoirTop + reservoirHeight);
+                    rockGradient.addColorStop(0, '#D2B48C'); // 砂岩色
+                    rockGradient.addColorStop(0.5, '#F4A460'); // より明るい砂岩
+                    rockGradient.addColorStop(1, '#CD853F'); // 濃い砂岩
+                    ctx.fillStyle = rockGradient;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(-this.width/2, reservoirTop);
+                    
+                    // 不規則な境界線
+                    for (let i = 0; i <= 10; i++) {
+                        const x = (-this.width/2) + (this.width * i / 10);
+                        const topVariation = Math.sin(this.x * 0.01 + i * 0.7) * 3;
+                        const bottomVariation = Math.cos(this.x * 0.012 + i * 0.9) * 4;
+                        
+                        if (i === 0) {
+                            ctx.moveTo(x, reservoirTop + topVariation);
+                        } else if (i === 10) {
+                            ctx.lineTo(x, reservoirTop + topVariation);
+                            ctx.lineTo(x, this.height/2 + bottomVariation);
+                            
+                            // 底面
+                            for (let j = 10; j >= 0; j--) {
+                                const bottomX = (-this.width/2) + (this.width * j / 10);
+                                const bottomVar = Math.cos(this.x * 0.012 + j * 0.9) * 4;
+                                ctx.lineTo(bottomX, this.height/2 + bottomVar);
+                            }
+                            
+                            ctx.lineTo(-this.width/2, reservoirTop);
+                        } else {
+                            ctx.lineTo(x, reservoirTop + topVariation);
+                        }
+                    }
+                    ctx.fill();
+                    
+                    // オイル（原油）の表現
+                    if (this.oilLevel > 0) {
+                        const oilHeight = reservoirHeight * 0.8 * this.oilLevel;
+                        
+                        // オイルのグラデーション
+                        const oilGradient = ctx.createLinearGradient(0, this.height/2 - oilHeight, 0, this.height/2);
+                        oilGradient.addColorStop(0, 'rgba(139, 69, 19, 0.9)'); // 濃い茶色
+                        oilGradient.addColorStop(0.3, 'rgba(0, 0, 0, 0.95)'); // 黒
+                        oilGradient.addColorStop(0.7, 'rgba(101, 67, 33, 0.9)'); // 濃い茶色
+                        oilGradient.addColorStop(1, 'rgba(139, 69, 19, 0.8)'); // やや明るい茶色
+                        
+                        ctx.fillStyle = oilGradient;
+                        ctx.fillRect(-this.width/2 + 8, this.height/2 - oilHeight, this.width - 16, oilHeight);
+                        
+                        // オイルの表面の波紋効果
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+                        ctx.lineWidth = 1;
+                        const surfaceY = this.height/2 - oilHeight;
+                        ctx.beginPath();
+                        ctx.moveTo(-this.width/2 + 8, surfaceY);
+                        for (let i = 0; i <= 8; i++) {
+                            const x = (-this.width/2 + 8) + ((this.width - 16) * i / 8);
+                            const wave = Math.sin(this.animationTime * 0.05 + i * 0.5) * 1.5;
+                            ctx.lineTo(x, surfaceY + wave);
+                        }
+                        ctx.stroke();
+                        
+                        // オイルの光沢
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+                        ctx.fillRect(-this.width/2 + 10, surfaceY, this.width - 20, 3);
+                    }
+                    
+                    // 多孔質構造の表現（小さな穴）
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+                    for (let i = 0; i < 15; i++) {
+                        const poreX = (Math.random() - 0.5) * (this.width - 20);
+                        const poreY = reservoirTop + Math.random() * reservoirHeight * 0.8;
+                        const poreSize = Math.random() * 2 + 1;
+                        ctx.beginPath();
+                        ctx.arc(poreX, poreY, poreSize, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    
+                    // 発見マーク（より控えめに）
+                    if (Math.abs(this.x - game.drillX) < 80 && Math.abs(this.y - game.drillY) < 80) {
+                        ctx.fillStyle = 'rgba(255, 215, 0, 0.8)';
+                        ctx.font = 'bold 14px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.shadowBlur = 5;
+                        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+                        ctx.fillText('⚫', 0, -this.height/2 - 15);
+                        ctx.shadowBlur = 0;
+                    }
+                } else {
+                    // 採掘済みの跡（より自然な穴）
+                    const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, this.width/2);
+                    gradient.addColorStop(0, 'rgba(0, 0, 0, 0.8)');
+                    gradient.addColorStop(0.7, 'rgba(101, 67, 33, 0.4)');
+                    gradient.addColorStop(1, 'rgba(139, 69, 19, 0.2)');
+                    ctx.fillStyle = gradient;
+                    
+                    ctx.beginPath();
+                    // 不規則な採掘跡
+                    for (let i = 0; i <= 16; i++) {
+                        const angle = (Math.PI * 2 * i) / 16;
+                        const radius = (this.width/2.5) + Math.sin(i * 0.7) * 8;
+                        const x = Math.cos(angle) * radius;
+                        const y = Math.sin(angle) * radius * 0.7;
+                        
+                        if (i === 0) {
+                            ctx.moveTo(x, y);
+                        } else {
+                            ctx.lineTo(x, y);
+                        }
+                    }
+                    ctx.fill();
+                }
+                
+                // オイルパーティクル（より現実的に）
+                this.particles.forEach(p => {
+                    ctx.globalAlpha = p.life * 0.6;
+                    ctx.fillStyle = '#654321'; // より自然な油の色
+                    ctx.beginPath();
+                    ctx.arc(p.x - this.x, p.y - screenY, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                
+                ctx.restore();
+            }
+        }
+
         class Mole {
             constructor(x, y) {
                 this.x = x;
@@ -1044,6 +1523,14 @@
                     ));
                 }
                 
+                // オイルポケット（800m以降、2000m未満） - 比較的浅い層に配置
+                if (game.depth >= 800 && game.depth < 2000 && Math.random() < 0.15) {
+                    game.oilPockets.push(new OilPocket(
+                        Math.random() * (canvas.width - 200) + 100,
+                        spawnY + Math.random() * 100
+                    ));
+                }
+                
                 // 断層（2500m以降） - 画面下から出現
                 if (game.depth > 2500) {
                     const faultChance = 0.1 + (game.depth - 2500) / 15000;
@@ -1187,6 +1674,38 @@
                 }
             });
             
+            // オイルポケットとの衝突チェック
+            game.oilPockets.forEach(oilPocket => {
+                oilPocket.update();
+                
+                if (!oilPocket.collected &&
+                    Math.abs(oilPocket.x - game.drillX) < (oilPocket.width/2 + 20) &&
+                    Math.abs(oilPocket.y - game.drillY) < (oilPocket.height/2 + 30)) {
+                    
+                    oilPocket.collected = true;
+                    
+                    // ドリル耐久度回復
+                    const oldDurability = game.drillDurability;
+                    game.drillDurability += oilPocket.healAmount;
+                    game.drillDurability = Math.min(game.drillDurability, game.drillMaxDurability);
+                    
+                    // 回復エフェクト
+                    for (let i = 0; i < 20; i++) {
+                        game.particles.push(new Particle(
+                            oilPocket.x + (Math.random() - 0.5) * 60,
+                            oilPocket.y + (Math.random() - 0.5) * 40,
+                            'steam'
+                        ));
+                    }
+                    
+                    // 画面の光る効果
+                    canvas.style.filter = 'brightness(1.3) sepia(0.3)';
+                    setTimeout(() => canvas.style.filter = '', 500);
+                    
+                    console.log(`オイル採掘！耐久度 ${Math.floor(oldDurability)} → ${Math.floor(game.drillDurability)} (+${Math.floor(oilPocket.healAmount)})`);
+                }
+            });
+
             // 蒸気孔ボーナス
             game.steamVents.forEach(vent => {
                 vent.update();
@@ -1216,15 +1735,25 @@
                 }
             });
             
+            // ビームエネルギーの充電
+            if (game.beamEnergy < game.beamMaxEnergy) {
+                game.beamEnergy += game.beamChargeRate;
+                game.beamEnergy = Math.min(game.beamEnergy, game.beamMaxEnergy);
+            }
+            
+            // ビーム更新
+            game.beams.forEach(beam => beam.update());
+            game.beams = game.beams.filter(beam => beam.life > 0);
+            
             // パーティクル更新
             game.particles.forEach(p => p.update());
             game.particles = game.particles.filter(p => p.life > 0);
             
-            // ドリル耐久度の回復（障害物に当たっていない時のみ）
-            if (!hitObstacle && game.drillDurability < game.drillMaxDurability) {
-                game.drillDurability += 0.1; // 回復速度を上げる
-                game.drillDurability = Math.min(game.drillDurability, game.drillMaxDurability);
-            }
+            // ドリル耐久度の回復機能を無効化（より挑戦的なゲームバランス）
+            // if (!hitObstacle && game.drillDurability < game.drillMaxDurability) {
+            //     game.drillDurability += 0.1; // 回復速度を上げる
+            //     game.drillDurability = Math.min(game.drillDurability, game.drillMaxDurability);
+            // }
             
             // 掘削速度の自動増加（緩やかに調整）
             if (game.depth % 500 === 0 && game.depth > 0) {  // 500mごとに加速
@@ -1274,6 +1803,7 @@
             game.steamVents = game.steamVents.filter(vent => vent.y > game.cameraY - 200);
             game.magmaPools = game.magmaPools.filter(pool => pool.y > game.cameraY - 200);
             game.faults = game.faults.filter(fault => fault.y > game.cameraY - 200);
+            game.oilPockets = game.oilPockets.filter(oilPocket => oilPocket.y > game.cameraY - 200);
             game.moles = game.moles.filter(mole => mole.y > game.cameraY - 200 && mole.y < game.cameraY + canvas.height + 200);
             game.pipeSegments = game.pipeSegments.filter(segment => segment.y > game.cameraY - 100);
             
@@ -1530,6 +2060,9 @@
             // 断層
             game.faults.forEach(fault => fault.draw());
             
+            // オイルポケット
+            game.oilPockets.forEach(oilPocket => oilPocket.draw());
+            
             // マグマ溜まり
             game.magmaPools.forEach(pool => pool.draw());
             
@@ -1538,6 +2071,9 @@
             
             // 蒸気孔
             game.steamVents.forEach(vent => vent.draw());
+            
+            // ビーム
+            game.beams.forEach(beam => beam.draw());
             
             // パーティクル
             game.particles.forEach(p => p.draw());
@@ -1682,6 +2218,21 @@
             } else {
                 document.getElementById('drillEnergy').style.background = 'linear-gradient(to right, #FF4500, #FFD700)';
             }
+            
+            // ビームエネルギーゲージの更新
+            const beamRatio = game.beamEnergy / game.beamMaxEnergy;
+            document.getElementById('beamEnergy').style.width = `${beamRatio * 100}%`;
+            
+            // 泥水ビームエネルギーの色とステータス
+            if (beamRatio >= 1.0) {
+                document.getElementById('beamEnergy').style.background = 'linear-gradient(to right, #8B4513, #A0522D)';
+                document.getElementById('beamStatus').textContent = 'スペースキーで発射！';
+                document.getElementById('beamStatus').style.color = '#D2B48C';
+            } else {
+                document.getElementById('beamEnergy').style.background = 'linear-gradient(to right, #654321, #8B4513)';
+                document.getElementById('beamStatus').textContent = `充電中... ${Math.floor(beamRatio * 100)}%`;
+                document.getElementById('beamStatus').style.color = '#FFFFFF';
+            }
         }
         
         function gameLoop() {
@@ -1718,12 +2269,17 @@
                 drillSpeed: 2.5, // 初期速度を2.5倍に増加
                 drillDurability: 100,
                 drillMaxDurability: 100,
+                beamEnergy: 0,
+                beamMaxEnergy: 100,
+                beamChargeRate: 0.15,
                 cooling: 1,
                 particles: [],
                 rocks: [],
                 steamVents: [],
                 magmaPools: [],
                 faults: [], // 断層
+                oilPockets: [], // オイルポケット
+                beams: [], // ビーム
                 moles: [], // もぐら
                 pipeSegments: [], // ドリルパイプのセグメント
                 maxDepth: 0,
@@ -1775,11 +2331,45 @@
         });
         */
         
+        // 泥水ビーム発射関数
+        function fireBeam() {
+            if (game.beamEnergy >= game.beamMaxEnergy && game.gameRunning) {
+                // ドリルから下方向に泥水ビーム発射
+                const beam = new Beam(game.drillX, game.drillY + 60, Math.PI / 2); // 下向き（90度）
+                game.beams.push(beam);
+                
+                // エネルギー消費
+                game.beamEnergy = 0;
+                
+                // 泥水発射エフェクト（茶色のパーティクル）
+                for (let i = 0; i < 15; i++) {
+                    game.particles.push(new Particle(
+                        game.drillX + (Math.random() - 0.5) * 25,
+                        game.drillY + 50 + (Math.random() - 0.5) * 25,
+                        Math.random() < 0.7 ? 'rock' : 'steam' // 泥と水蒸気の混合
+                    ));
+                }
+                
+                // 画面効果（茶色がかったフラッシュ）
+                canvas.style.filter = 'brightness(1.3) sepia(0.5) saturate(1.5)';
+                setTimeout(() => canvas.style.filter = '', 150);
+                
+                console.log('泥水ビーム発射！');
+            }
+        }
+
         // キー入力
         window.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
                 e.preventDefault();
             }
+            
+            // スペースキーで泥水ビーム発射
+            if (e.key === ' ' || e.code === 'Space') {
+                e.preventDefault();
+                fireBeam();
+            }
+            
             keys[e.key] = true;
         });
         
