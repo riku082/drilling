@@ -237,17 +237,91 @@
                 position: fixed;
                 width: 100%;
                 height: 100%;
+                padding: 0;
+                margin: 0;
             }
             
             #gameContainer {
                 border-radius: 0;
                 width: 100vw;
                 height: 100vh;
+                max-width: 100vw;
+                max-height: 100vh;
+            }
+            
+            #gameCanvas {
+                width: 100% !important;
+                height: 100% !important;
+                object-fit: contain;
             }
             
             .info-panel {
-                font-size: max(12px, 2.5vw);
-                padding: max(8px, 1.5vw);
+                font-size: max(10px, 2.2vw);
+                padding: max(6px, 1.2vw);
+                min-width: max(150px, 30vw);
+                border-radius: max(5px, 1vw);
+            }
+            
+            #stats {
+                top: max(10px, 1vh);
+                left: max(10px, 1vw);
+                transform: scale(0.9);
+                transform-origin: top left;
+            }
+            
+            #mobileControls {
+                bottom: max(10px, 1vh);
+                gap: max(15px, 2vw);
+            }
+            
+            .touch-button {
+                width: max(60px, 12vw);
+                height: max(60px, 12vw);
+                font-size: max(18px, 3.5vw);
+                border-width: 2px;
+            }
+            
+            /* 縦向きスマホ用 */
+            @media (orientation: portrait) {
+                #gameContainer {
+                    height: 100vh;
+                }
+                
+                .info-panel {
+                    font-size: max(11px, 2.8vw);
+                }
+                
+                .touch-button {
+                    width: max(70px, 14vw);
+                    height: max(70px, 14vw);
+                }
+            }
+            
+            /* 横向きスマホ用 */
+            @media (orientation: landscape) {
+                #gameContainer {
+                    width: 100vw;
+                    height: 100vh;
+                }
+                
+                .info-panel {
+                    font-size: max(9px, 2vh);
+                    padding: max(5px, 1vh);
+                }
+                
+                #stats {
+                    transform: scale(0.8);
+                }
+                
+                .touch-button {
+                    width: max(50px, 8vh);
+                    height: max(50px, 8vh);
+                    font-size: max(16px, 3vh);
+                }
+                
+                #mobileControls {
+                    bottom: max(5px, 1vh);
+                }
             }
         }
     </style>
@@ -311,12 +385,26 @@
         function resizeGame() {
             const container = document.getElementById('gameContainer');
             const containerRect = container.getBoundingClientRect();
-            const scaleX = containerRect.width / 1200;
-            const scaleY = containerRect.height / 1000;
-            const scale = Math.min(scaleX, scaleY);
+            const isMobile = window.innerWidth <= 768 || window.innerHeight <= 600;
             
-            canvas.style.transform = `scale(${scale})`;
-            canvas.style.transformOrigin = 'top left';
+            if (isMobile) {
+                // モバイルでは画面全体を使用
+                canvas.style.width = '100%';
+                canvas.style.height = '100%';
+                canvas.style.transform = 'none';
+                canvas.style.objectFit = 'contain';
+            } else {
+                // デスクトップでは適切にスケーリング
+                const scaleX = containerRect.width / 1200;
+                const scaleY = containerRect.height / 1000;
+                const scale = Math.min(scaleX, scaleY);
+                
+                canvas.style.transform = `scale(${scale})`;
+                canvas.style.transformOrigin = 'top left';
+                canvas.style.width = '1200px';
+                canvas.style.height = '1000px';
+                canvas.style.objectFit = 'initial';
+            }
             
             // ゲーム内座標も調整
             if (game.drillX === 600) { // 初期位置の場合
