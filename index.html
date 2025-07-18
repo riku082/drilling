@@ -2,8 +2,13 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>地熱井戸掘削ゲーム</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#FF4500">
+    <meta name="msapplication-TileColor" content="#FF4500">
+    <title>GEO DRILLING</title>
     
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -106,6 +111,40 @@
             #startScreen h1 {
                 margin-top: 60px !important;
                 font-size: 36px !important;
+            }
+
+            .title-container {
+                flex-direction: column !important;
+                align-items: center !important;
+                gap: 15px !important;
+            }
+            
+            /* スマホ版では先生方の画像を横並びに */
+            .title-container .teachers-row {
+                display: flex !important;
+                gap: 15px !important;
+                justify-content: center !important;
+                align-items: flex-end !important;
+                margin-top: 10px !important;
+            }
+            
+            .title-container img[alt="GEO DRILLING"] {
+                max-height: 200px !important;
+                margin-bottom: 10px !important;
+            }
+
+            .title-container img[alt="長縄先生"] {
+                height: 80px !important;
+            }
+
+            .title-container img[alt="エルヴァー先生"] {
+                height: 80px !important;
+            }
+            
+            /* スマホ版でのタイトル画像サイズ調整 */
+            .title-container img[alt="GEO DRILLING"] {
+                max-height: 180px !important;
+                width: auto !important;
             }
 
             .instructions {
@@ -322,6 +361,18 @@
             color: #FF4500;
             margin-bottom: 20px;
             animation: pulse 2s infinite;
+            font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
+            text-shadow: 
+                2px 0 0 #000,
+                -2px 0 0 #000,
+                0 2px 0 #000,
+                0 -2px 0 #000,
+                2px 2px 0 #000,
+                -2px -2px 0 #000,
+                2px -2px 0 #000,
+                -2px 2px 0 #000;
+            letter-spacing: 4px;
+            font-weight: bold;
         }
 
         @keyframes pulse {
@@ -397,9 +448,16 @@
         
         /* レスポンシブ対応 */
         @media (max-width: 1200px) {
+            #brazilDistancePage {
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
+            }
+            
             #brazilDistancePage .flex-container {
                 flex-direction: column !important;
                 gap: 20px !important;
+                min-height: auto !important;
+                padding: 20px !important;
             }
             
             #brazilDistancePage .earth-container {
@@ -414,9 +472,47 @@
         }
         
         @media (max-width: 768px) {
+            #brazilDistancePage {
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
+                -webkit-overflow-scrolling: touch !important;
+                height: 100vh !important;
+            }
+            
+            #brazilDistancePage .flex-container {
+                padding: 15px !important;
+                gap: 15px !important;
+                min-height: auto !important;
+                height: auto !important;
+                flex: none !important;
+            }
+            
             #brazilDistancePage canvas {
                 width: 300px !important;
                 height: 300px !important;
+            }
+            
+            #brazilDistancePage h1 {
+                font-size: 24px !important;
+                margin: 10px 0 !important;
+            }
+            
+            #brazilDistancePage .info-container {
+                padding: 15px !important;
+                margin: 10px 0 !important;
+            }
+            
+            /* ランキング部分もスクロール可能に */
+            #brazilPageRanking {
+                max-height: none !important;
+                overflow: visible !important;
+                margin-bottom: 20px !important;
+            }
+            
+            #brazilRankingList {
+                max-height: none !important;
+                overflow: visible !important;
+                height: auto !important;
             }
         }
 
@@ -449,14 +545,48 @@
             }
         }
 
+        /* 画面の向きに応じた調整 */
+        @media (orientation: landscape) and (max-height: 500px) {
+            #mobileControls {
+                bottom: 10px !important;
+                gap: 10px !important;
+            }
+            
+            .touch-button {
+                width: 60px !important;
+                height: 60px !important;
+                font-size: 18px !important;
+            }
+            
+            #stats {
+                transform: scale(0.8) !important;
+                top: 5px !important;
+                left: 5px !important;
+            }
+        }
+
+        /* 縦向きでの調整 */
+        @media (orientation: portrait) and (max-width: 480px) {
+            #mobileControls {
+                bottom: 15px !important;
+                gap: 20px !important;
+            }
+            
+            .touch-button {
+                width: 70px !important;
+                height: 70px !important;
+                font-size: 20px !important;
+            }
+        }
+
         .touch-button {
-            width: min(70px, 14vw);
-            height: min(70px, 14vw);
-            background: rgba(255, 69, 0, 0.8);
-            border: 3px solid #FFD700;
+            width: min(80px, 16vw);
+            height: min(80px, 16vw);
+            background: rgba(255, 69, 0, 0.9);
+            border: 4px solid #FFD700;
             border-radius: 50%;
             color: white;
-            font-size: min(20px, 4vw);
+            font-size: min(24px, 5vw);
             font-weight: bold;
             display: flex;
             align-items: center;
@@ -465,6 +595,13 @@
             user-select: none;
             transition: all 0.1s;
             touch-action: manipulation;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .touch-button:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
 
         #spaceButton {
@@ -650,14 +787,18 @@
                 </button>
             </div>
             
-            <h1>🔥 地熱井戸掘削ゲーム 🔥</h1>
+            <div class="title-container" style="display: flex; align-items: flex-end; justify-content: center; margin-bottom: 30px; gap: 20px; flex-wrap: wrap;">
+                <img src="タイトルピクセル.png" alt="GEO DRILLING" style="max-width: 100%; height: auto; max-height: 300px; image-rendering: pixelated; image-rendering: -moz-crisp-edges; image-rendering: crisp-edges;">
+                <div class="teachers-row" style="display: flex; gap: 20px; align-items: flex-end;">
+                    <img src="長縄先生.png" alt="長縄先生" style="height: 120px; image-rendering: pixelated; image-rendering: -moz-crisp-edges; image-rendering: crisp-edges;">
+                    <img src="エルヴァー先生.png" alt="エルヴァー先生" style="height: 120px; image-rendering: pixelated; image-rendering: -moz-crisp-edges; image-rendering: crisp-edges;">
+                </div>
+            </div>
             <div class="instructions">
-                <p>自動で地球の深部へ掘り進みます！</p>
                 <p>← → キーで掘削機を左右に移動して障害物を避けよう</p>
                 <p>岩にぶつかるとドリルが消耗します</p>
-                <p>🛢️ オイルポケットでドリル耐久度が回復！</p>
-                <p>💧 泥水ビームゲージが溜まったらスペースキーで障害物を破壊！</p>
-                <p>より深く掘るほど高温になり、多くのエネルギーを獲得できます</p>
+                <p>オイルポケットでドリル耐久度が回復！</p>
+                <p>泥水ビームゲージが溜まったらスペースキーで障害物を破壊！</p>
             </div>
             <button onclick="startGame()">ゲームスタート</button>
             <button onclick="showTitleRanking()">ランキング</button>
@@ -767,7 +908,21 @@
 
     <script>
         const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', {
+            alpha: false,
+            antialias: false,
+            powerPreference: 'high-performance'
+        });
+        
+        // スマホでのパフォーマンス最適化
+        if ('devicePixelRatio' in window) {
+            const dpr = Math.min(window.devicePixelRatio, 2);
+            canvas.style.width = canvas.width + 'px';
+            canvas.style.height = canvas.height + 'px';
+            canvas.width = canvas.width * dpr;
+            canvas.height = canvas.height * dpr;
+            ctx.scale(dpr, dpr);
+        }
         
         // PDCビット画像の読み込み
         const drillBitImage = new Image();
@@ -1405,12 +1560,17 @@
             beams: [], // 発射中のビーム
             particles: [],
             rocks: [],
+            softRocks: [], // 白い石（柔らかい石）
             steamVents: [],
             magmaPools: [],
             faults: [], // 断層
             oilPockets: [], // オイルポケット
             oilMoney: [], // オイルマネー
             moles: [], // もぐら
+            earthworms: [], // ミミズ
+            fossils: [], // 化石
+            undergroundBugs: [], // 地下虫
+            caveFish: [], // 洞窟魚
             pipeSegments: [], // ドリルパイプのセグメント
             maxDepth: 0,
             maxTemp: 15,
@@ -1780,6 +1940,124 @@
                     }
                     ctx.closePath();
                     ctx.fill();
+                }
+                
+                ctx.restore();
+            }
+        }
+
+        class SoftRock {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.width = Math.random() * 80 + 40;
+                this.height = Math.random() * 50 + 25;
+                this.hardness = 0.3; // 非常に柔らかい
+                this.hit = false;
+                this.breakEffect = false;
+                this.points = [];
+                
+                // Generate softer, more rounded shape points
+                const numPoints = Math.floor(Math.random() * 4) + 6; // 6-9 points
+                const angleStep = (Math.PI * 2) / numPoints;
+                for (let i = 0; i < numPoints; i++) {
+                    const angle = i * angleStep;
+                    const radius = (Math.random() * 0.2 + 0.8) * Math.min(this.width, this.height) / 2;
+                    this.points.push({
+                        x: radius * Math.cos(angle),
+                        y: radius * Math.sin(angle)
+                    });
+                }
+            }
+            
+            draw() {
+                const screenY = this.y - game.cameraY;
+                
+                if (screenY < -100 || screenY > canvas.height + 100) return;
+                
+                ctx.save();
+                ctx.translate(this.x, screenY);
+                
+                if (this.hit) {
+                    ctx.globalAlpha = 0.5;
+                    this.breakEffect = true;
+                }
+                
+                // 白い石のグラデーション - 明るい白からライトグレー
+                const gradient = ctx.createLinearGradient(0, -this.height / 2, 0, this.height / 2);
+                gradient.addColorStop(0, 'rgba(255, 255, 255, 0.95)'); // 純白
+                gradient.addColorStop(0.3, 'rgba(248, 248, 248, 0.95)'); // オフホワイト
+                gradient.addColorStop(0.7, 'rgba(240, 240, 240, 0.95)'); // ライトグレー
+                gradient.addColorStop(1, 'rgba(220, 220, 220, 0.95)'); // 薄いグレー
+                ctx.fillStyle = gradient;
+
+                // 柔らかい岩石の形状を描画（より丸みを帯びた）
+                ctx.beginPath();
+                ctx.moveTo(this.points[0].x, this.points[0].y);
+                
+                // Bezier curves for smoother edges
+                for (let i = 1; i < this.points.length; i++) {
+                    const current = this.points[i];
+                    const next = this.points[(i + 1) % this.points.length];
+                    const cpx = (current.x + next.x) / 2;
+                    const cpy = (current.y + next.y) / 2;
+                    ctx.quadraticCurveTo(current.x, current.y, cpx, cpy);
+                }
+                ctx.closePath();
+                ctx.fill();
+
+                // 白い石の内部の質感（結晶のような模様）
+                ctx.fillStyle = 'rgba(235, 235, 235, 0.7)';
+                for (let i = 0; i < 8; i++) {
+                    const x = (Math.random() - 0.5) * this.width * 0.5;
+                    const y = (Math.random() - 0.5) * this.height * 0.5;
+                    const size = Math.random() * 2 + 1;
+                    ctx.beginPath();
+                    ctx.arc(x, y, size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // 白い石のハイライト
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                for (let i = 0; i < 4; i++) {
+                    const x = (Math.random() - 0.5) * this.width * 0.3;
+                    const y = (Math.random() - 0.5) * this.height * 0.3;
+                    const size = Math.random() * 1.5 + 0.5;
+                    ctx.beginPath();
+                    ctx.arc(x, y, size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // 明るい輪郭線
+                ctx.shadowColor = 'rgba(200, 200, 200, 0.5)';
+                ctx.shadowBlur = 4;
+                ctx.strokeStyle = '#E0E0E0'; // 薄いグレーの輪郭
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                
+                // 破壊エフェクト
+                if (this.breakEffect) {
+                    // キラキラエフェクト
+                    for (let i = 0; i < 6; i++) {
+                        const sparkX = (Math.random() - 0.5) * this.width;
+                        const sparkY = (Math.random() - 0.5) * this.height;
+                        const sparkSize = Math.random() * 3 + 1;
+                        
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                        ctx.beginPath();
+                        ctx.arc(sparkX, sparkY, sparkSize, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        // 十字の光
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(sparkX - sparkSize * 2, sparkY);
+                        ctx.lineTo(sparkX + sparkSize * 2, sparkY);
+                        ctx.moveTo(sparkX, sparkY - sparkSize * 2);
+                        ctx.lineTo(sparkX, sparkY + sparkSize * 2);
+                        ctx.stroke();
+                    }
                 }
                 
                 ctx.restore();
@@ -2314,12 +2592,400 @@
                 ctx.restore();
             }
         }
+
+        class Earthworm {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.segments = [];
+                this.segmentCount = 8;
+                this.vx = (Math.random() - 0.5) * 2;
+                this.vy = 0;
+                this.animationTime = 0;
+                this.direction = Math.random() > 0.5 ? 1 : -1;
+                this.wiggleSpeed = 0.1;
+                
+                for (let i = 0; i < this.segmentCount; i++) {
+                    this.segments.push({
+                        x: x - i * 6,
+                        y: y,
+                        prevX: x - i * 6,
+                        prevY: y
+                    });
+                }
+            }
+            
+            update() {
+                this.animationTime++;
+                
+                const distance = Math.sqrt(
+                    Math.pow(this.x - game.drillX, 2) + 
+                    Math.pow(this.y - game.drillY, 2)
+                );
+                
+                if (distance < 100) {
+                    this.vx = (this.x - game.drillX) * 0.1;
+                    this.vy = (this.y - game.drillY) * 0.05;
+                }
+                
+                this.x += this.vx + Math.sin(this.animationTime * this.wiggleSpeed) * 0.5;
+                this.y += this.vy + Math.cos(this.animationTime * this.wiggleSpeed * 0.7) * 0.3;
+                
+                for (let i = 0; i < this.segments.length; i++) {
+                    const segment = this.segments[i];
+                    segment.prevX = segment.x;
+                    segment.prevY = segment.y;
+                    
+                    if (i === 0) {
+                        segment.x = this.x;
+                        segment.y = this.y;
+                    } else {
+                        const prevSegment = this.segments[i - 1];
+                        const dx = prevSegment.x - segment.x;
+                        const dy = prevSegment.y - segment.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance > 8) {
+                            segment.x = prevSegment.x - (dx / distance) * 8;
+                            segment.y = prevSegment.y - (dy / distance) * 8;
+                        }
+                    }
+                }
+            }
+            
+            draw() {
+                const screenY = this.y - game.cameraY;
+                if (screenY < -100 || screenY > canvas.height + 100) return;
+                
+                ctx.save();
+                
+                ctx.strokeStyle = '#8B4513';
+                ctx.lineWidth = 6;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                
+                ctx.beginPath();
+                for (let i = 0; i < this.segments.length; i++) {
+                    const segment = this.segments[i];
+                    const segmentScreenY = segment.y - game.cameraY;
+                    
+                    if (i === 0) {
+                        ctx.moveTo(segment.x, segmentScreenY);
+                    } else {
+                        ctx.lineTo(segment.x, segmentScreenY);
+                    }
+                }
+                ctx.stroke();
+                
+                for (let i = 0; i < this.segments.length; i++) {
+                    const segment = this.segments[i];
+                    const segmentScreenY = segment.y - game.cameraY;
+                    
+                    ctx.fillStyle = i === 0 ? '#A0522D' : '#8B4513';
+                    ctx.beginPath();
+                    ctx.arc(segment.x, segmentScreenY, i === 0 ? 4 : 3, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    if (i % 2 === 0) {
+                        ctx.fillStyle = '#D2691E';
+                        ctx.beginPath();
+                        ctx.arc(segment.x, segmentScreenY, 1, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+                
+                ctx.restore();
+            }
+        }
+
+        class Fossil {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.type = Math.floor(Math.random() * 3);
+                this.rotation = Math.random() * Math.PI * 2;
+                this.scale = 0.8 + Math.random() * 0.4;
+                this.discovered = false;
+            }
+            
+            update() {
+                const distance = Math.sqrt(
+                    Math.pow(this.x - game.drillX, 2) + 
+                    Math.pow(this.y - game.drillY, 2)
+                );
+                
+                if (distance < 50 && !this.discovered) {
+                    this.discovered = true;
+                    game.score += 500;
+                }
+            }
+            
+            draw() {
+                const screenY = this.y - game.cameraY;
+                if (screenY < -100 || screenY > canvas.height + 100) return;
+                
+                ctx.save();
+                ctx.translate(this.x, screenY);
+                ctx.rotate(this.rotation);
+                ctx.scale(this.scale, this.scale);
+                
+                ctx.fillStyle = this.discovered ? '#F4A460' : '#D2B48C';
+                ctx.strokeStyle = '#8B7355';
+                ctx.lineWidth = 2;
+                
+                switch (this.type) {
+                    case 0:
+                        ctx.beginPath();
+                        ctx.ellipse(0, 0, 25, 15, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.stroke();
+                        
+                        for (let i = 0; i < 5; i++) {
+                            const angle = (Math.PI * 2 / 5) * i;
+                            ctx.beginPath();
+                            ctx.moveTo(Math.cos(angle) * 15, Math.sin(angle) * 10);
+                            ctx.lineTo(Math.cos(angle) * 20, Math.sin(angle) * 12);
+                            ctx.stroke();
+                        }
+                        break;
+                        
+                    case 1:
+                        for (let i = 0; i < 12; i++) {
+                            const angle = (Math.PI * 2 / 12) * i;
+                            const radius = 10 + Math.sin(i * 3) * 8;
+                            const x = Math.cos(angle) * radius;
+                            const y = Math.sin(angle) * radius * 0.7;
+                            
+                            if (i === 0) {
+                                ctx.beginPath();
+                                ctx.moveTo(x, y);
+                            } else {
+                                ctx.lineTo(x, y);
+                            }
+                        }
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.stroke();
+                        break;
+                        
+                    case 2:
+                        ctx.beginPath();
+                        ctx.moveTo(-20, -10);
+                        ctx.quadraticCurveTo(0, -25, 20, -10);
+                        ctx.quadraticCurveTo(15, 0, 10, 15);
+                        ctx.quadraticCurveTo(0, 20, -10, 15);
+                        ctx.quadraticCurveTo(-15, 0, -20, -10);
+                        ctx.fill();
+                        ctx.stroke();
+                        
+                        ctx.beginPath();
+                        ctx.arc(-5, -5, 3, 0, Math.PI * 2);
+                        ctx.arc(5, -5, 3, 0, Math.PI * 2);
+                        ctx.fill();
+                        break;
+                }
+                
+                if (this.discovered) {
+                    ctx.fillStyle = '#FFD700';
+                    ctx.font = 'bold 16px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('発見!', 0, -35);
+                }
+                
+                ctx.restore();
+            }
+        }
+
+        class UndergroundBug {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 3;
+                this.vy = (Math.random() - 0.5) * 2;
+                this.animationTime = 0;
+                this.legOffset = Math.random() * Math.PI * 2;
+                this.fleeing = false;
+                this.size = 0.7 + Math.random() * 0.6;
+            }
+            
+            update() {
+                this.animationTime++;
+                
+                const distance = Math.sqrt(
+                    Math.pow(this.x - game.drillX, 2) + 
+                    Math.pow(this.y - game.drillY, 2)
+                );
+                
+                if (distance < 120) {
+                    this.fleeing = true;
+                    this.vx = (this.x - game.drillX) * 0.15;
+                    this.vy = (this.y - game.drillY) * 0.1;
+                }
+                
+                if (this.fleeing) {
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    this.vx *= 0.98;
+                    this.vy *= 0.98;
+                } else {
+                    this.x += Math.sin(this.animationTime * 0.1) * 0.5;
+                    this.y += Math.cos(this.animationTime * 0.07) * 0.3;
+                }
+            }
+            
+            draw() {
+                const screenY = this.y - game.cameraY;
+                if (screenY < -100 || screenY > canvas.height + 100) return;
+                
+                ctx.save();
+                ctx.translate(this.x, screenY);
+                ctx.scale(this.size, this.size);
+                
+                ctx.fillStyle = '#2F4F2F';
+                ctx.strokeStyle = '#1C3F1C';
+                ctx.lineWidth = 1;
+                
+                ctx.beginPath();
+                ctx.ellipse(0, 0, 12, 8, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                
+                for (let i = 0; i < 6; i++) {
+                    const side = i % 2 === 0 ? -1 : 1;
+                    const legIndex = Math.floor(i / 2);
+                    const legX = (legIndex - 1) * 8;
+                    const legY = side * 8;
+                    const legAngle = Math.sin(this.animationTime * 0.2 + this.legOffset + i) * 0.5;
+                    
+                    ctx.strokeStyle = '#1C3F1C';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(legX, side * 4);
+                    ctx.lineTo(
+                        legX + Math.cos(legAngle) * 8,
+                        legY + Math.sin(legAngle) * 4
+                    );
+                    ctx.stroke();
+                }
+                
+                ctx.fillStyle = '#8B0000';
+                ctx.beginPath();
+                ctx.arc(-3, -2, 1, 0, Math.PI * 2);
+                ctx.arc(3, -2, 1, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.strokeStyle = '#654321';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(-6, -4);
+                ctx.lineTo(-8, -6);
+                ctx.moveTo(6, -4);
+                ctx.lineTo(8, -6);
+                ctx.stroke();
+                
+                ctx.restore();
+            }
+        }
+
+        class CaveFish {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 2;
+                this.vy = 0;
+                this.animationTime = 0;
+                this.swimDirection = Math.random() > 0.5 ? 1 : -1;
+                this.depth = y;
+                this.alpha = 0.8;
+            }
+            
+            update() {
+                this.animationTime++;
+                
+                this.x += this.vx + Math.sin(this.animationTime * 0.05) * this.swimDirection;
+                this.y += Math.sin(this.animationTime * 0.03) * 0.5;
+                
+                if (this.x < 50 || this.x > canvas.width - 50) {
+                    this.swimDirection *= -1;
+                    this.vx *= -1;
+                }
+                
+                const distance = Math.sqrt(
+                    Math.pow(this.x - game.drillX, 2) + 
+                    Math.pow(this.y - game.drillY, 2)
+                );
+                
+                if (distance < 100) {
+                    this.vx = (this.x - game.drillX) * 0.08;
+                    this.vy = (this.y - game.drillY) * 0.05;
+                }
+            }
+            
+            draw() {
+                const screenY = this.y - game.cameraY;
+                if (screenY < -100 || screenY > canvas.height + 100) return;
+                
+                ctx.save();
+                ctx.translate(this.x, screenY);
+                ctx.globalAlpha = this.alpha;
+                
+                const facing = this.swimDirection > 0 ? 1 : -1;
+                ctx.scale(facing, 1);
+                
+                ctx.fillStyle = '#E6E6FA';
+                ctx.strokeStyle = '#D8BFD8';
+                ctx.lineWidth = 1;
+                
+                ctx.beginPath();
+                ctx.ellipse(0, 0, 20, 8, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                
+                ctx.fillStyle = '#FFB6C1';
+                ctx.beginPath();
+                ctx.moveTo(15, 0);
+                ctx.lineTo(25, -5);
+                ctx.lineTo(25, 5);
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.beginPath();
+                ctx.moveTo(15, -8);
+                ctx.lineTo(22, -12);
+                ctx.lineTo(20, -6);
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.beginPath();
+                ctx.moveTo(15, 8);
+                ctx.lineTo(22, 12);
+                ctx.lineTo(20, 6);
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.fillStyle = '#8B0000';
+                ctx.beginPath();
+                ctx.arc(-8, -2, 2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.strokeStyle = '#D8BFD8';
+                ctx.lineWidth = 0.5;
+                for (let i = 0; i < 3; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(-5 + i * 5, -6);
+                    ctx.lineTo(-5 + i * 5, 6);
+                    ctx.stroke();
+                }
+                
+                ctx.restore();
+            }
+        }
         
         class Fault {
             constructor(y) {
                 this.y = y;
-                this.startX = Math.random() * (canvas.width - 400) + 200; // 断層の開始X位置
-                this.length = Math.random() * 400 + 300; // 断層の長さ（300-700px）
+                this.startX = Math.random() * (canvas.width - 250) + 125; // 断層の開始X位置
+                this.length = Math.random() * 200 + 150; // 断層の長さ（150-350px）
                 this.angle = (Math.random() * 60 - 30) * Math.PI / 180; // -30度から+30度の角度
                 this.warningWidth = 60; // 警告範囲の幅
                 this.particles = [];
@@ -2574,8 +3240,48 @@
                     }
                 }
                 
-                // 岩の生成 - 画面下から出現
-                const rockCount = Math.floor(Math.random() * 2) + 1 + Math.floor(game.depth / 2000);
+                // ミミズ（100-1500mの部分） - 浅い層から中層
+                if (game.depth >= 100 && game.depth < 1500) {
+                    if (Math.random() < 0.25) {
+                        game.earthworms.push(new Earthworm(
+                            Math.random() * (canvas.width - 100) + 50,
+                            spawnY + Math.random() * 80
+                        ));
+                    }
+                }
+                
+                // 化石（800-4000mの部分） - 中層から深層
+                if (game.depth >= 800 && game.depth < 4000) {
+                    if (Math.random() < 0.08) {
+                        game.fossils.push(new Fossil(
+                            Math.random() * (canvas.width - 100) + 50,
+                            spawnY + Math.random() * 120
+                        ));
+                    }
+                }
+                
+                // 地下虫（300-2500mの部分） - 幅広い層に分布
+                if (game.depth >= 300 && game.depth < 2500) {
+                    if (Math.random() < 0.2) {
+                        game.undergroundBugs.push(new UndergroundBug(
+                            Math.random() * (canvas.width - 100) + 50,
+                            spawnY + Math.random() * 100
+                        ));
+                    }
+                }
+                
+                // 洞窟魚（1000-3500mの部分） - 地下水がある深い層
+                if (game.depth >= 1000 && game.depth < 3500) {
+                    if (Math.random() < 0.12) {
+                        game.caveFish.push(new CaveFish(
+                            Math.random() * (canvas.width - 100) + 50,
+                            spawnY + Math.random() * 90
+                        ));
+                    }
+                }
+                
+                // 岩の生成 - 画面下から出現（出現率アップ）
+                const rockCount = Math.floor(Math.random() * 3) + 2 + Math.floor(game.depth / 1500);
                 for (let i = 0; i < rockCount; i++) {
                     const rock = new Rock(
                         Math.random() * (canvas.width - 100) + 50,
@@ -2583,6 +3289,18 @@
                     );
                     rock.hardness += game.depth / 3000;
                     game.rocks.push(rock);
+                }
+                
+                // 白い石の生成（全深度で出現、超高頻度）
+                let softRockCount = Math.random() < 0.9 ? 1 : 0;
+                if (Math.random() < 0.4) { // 追加で2個目の可能性
+                    softRockCount++;
+                }
+                for (let i = 0; i < softRockCount; i++) {
+                    game.softRocks.push(new SoftRock(
+                        Math.random() * (canvas.width - 100) + 50,
+                        spawnY + Math.random() * 80 + (i * 40)
+                    ));
                 }
                 
                 // 蒸気孔（1500m以降） - 画面下から出現
@@ -2821,16 +3539,36 @@
                 }
             });
             
+            // ミミズの更新
+            game.earthworms.forEach(earthworm => {
+                earthworm.update();
+            });
+            
+            // 化石の更新
+            game.fossils.forEach(fossil => {
+                fossil.update();
+            });
+            
+            // 地下虫の更新
+            game.undergroundBugs.forEach(bug => {
+                bug.update();
+            });
+            
+            // 洞窟魚の更新
+            game.caveFish.forEach(fish => {
+                fish.update();
+            });
+            
             // 岩との衝突チェック（先端ビットのみ）
             game.rocks.forEach(rock => {
                 // ビット先端位置（ドリルの最下端）
                 const bitTipX = game.drillX;
                 const bitTipY = game.drillY + 110; // ドリル全体の最下端
-                const bitTipRadius = 25; // ビット先端の小さな範囲
+                const bitTipRadius = 15; // より小さな当たり判定
                 
                 if (!rock.hit &&
-                    Math.abs(rock.x - bitTipX) < (rock.width/2 + bitTipRadius) &&
-                    Math.abs(rock.y - bitTipY) < (rock.height/2 + bitTipRadius)) {
+                    Math.abs(rock.x - bitTipX) < (rock.width/3 + bitTipRadius) &&
+                    Math.abs(rock.y - bitTipY) < (rock.height/3 + bitTipRadius)) {
                     
                     rock.hit = true;
                     game.drillDurability -= rock.hardness * 3;
@@ -2878,6 +3616,50 @@
                     setTimeout(() => canvas.style.transform = '', 150);
                 }
             });
+            
+            // 白い石（柔らかい石）との衝突チェック（先端ビットのみ）
+            for (let i = game.softRocks.length - 1; i >= 0; i--) {
+                const softRock = game.softRocks[i];
+                // ビット先端位置（ドリルの最下端）
+                const bitTipX = game.drillX;
+                const bitTipY = game.drillY + 110; // ドリル全体の最下端
+                const bitTipRadius = 15; // より小さな当たり判定
+                
+                if (!softRock.hit &&
+                    Math.abs(softRock.x - bitTipX) < (softRock.width/3 + bitTipRadius) &&
+                    Math.abs(softRock.y - bitTipY) < (softRock.height/3 + bitTipRadius)) {
+                    
+                    // 白い石は砕けて完全に消える（ダメージなし）
+                    game.softRocks.splice(i, 1);
+                    
+                    // 美しい破壊エフェクト（白い石特有）- より多くのパーティクル
+                    for (let j = 0; j < 20; j++) {
+                        game.particles.push(new Particle(
+                            softRock.x + (Math.random() - 0.5) * softRock.width,
+                            softRock.y + (Math.random() - 0.5) * softRock.height,
+                            j < 15 ? 'rock' : 'spark' // 白い粒子とキラキラ
+                        ));
+                    }
+                    
+                    // キラキラエフェクトを追加
+                    for (let j = 0; j < 8; j++) {
+                        const sparkX = softRock.x + (Math.random() - 0.5) * softRock.width * 1.5;
+                        const sparkY = softRock.y + (Math.random() - 0.5) * softRock.height * 1.5;
+                        game.particles.push(new Particle(sparkX, sparkY, 'spark'));
+                    }
+                    
+                    // 柔らかい石の破壊音（軽い音）
+                    audioManager.playSound('collision');
+                    
+                    // 軽い振動エフェクト
+                    canvas.style.transform = `translate(${Math.random() * 6 - 3}px, ${Math.random() * 6 - 3}px)`;
+                    setTimeout(() => canvas.style.transform = '', 80);
+                    
+                    // 白い石破壊時の特別エフェクト（明るく光る）
+                    canvas.style.filter = 'brightness(1.3) saturate(1.3) contrast(1.1)';
+                    setTimeout(() => canvas.style.filter = '', 120);
+                }
+            }
             
             // オイルポケットとの衝突チェック
             game.oilPockets.forEach(oilPocket => {
@@ -3038,11 +3820,16 @@
             
             // オブジェクトのクリーンアップ（画面外のオブジェクトを削除）
             game.rocks = game.rocks.filter(rock => rock.y > game.cameraY - 200);
+            game.softRocks = game.softRocks.filter(softRock => softRock.y > game.cameraY - 200);
             game.steamVents = game.steamVents.filter(vent => vent.y > game.cameraY - 200);
             game.magmaPools = game.magmaPools.filter(pool => pool.y > game.cameraY - 200);
             game.faults = game.faults.filter(fault => fault.y > game.cameraY - 200);
             game.oilPockets = game.oilPockets.filter(oilPocket => oilPocket.y > game.cameraY - 200);
             game.moles = game.moles.filter(mole => mole.y > game.cameraY - 200 && mole.y < game.cameraY + canvas.height + 200);
+            game.earthworms = game.earthworms.filter(earthworm => earthworm.y > game.cameraY - 200 && earthworm.y < game.cameraY + canvas.height + 200);
+            game.fossils = game.fossils.filter(fossil => fossil.y > game.cameraY - 200 && fossil.y < game.cameraY + canvas.height + 200);
+            game.undergroundBugs = game.undergroundBugs.filter(bug => bug.y > game.cameraY - 200 && bug.y < game.cameraY + canvas.height + 200);
+            game.caveFish = game.caveFish.filter(fish => fish.y > game.cameraY - 200 && fish.y < game.cameraY + canvas.height + 200);
             game.pipeSegments = game.pipeSegments.filter(segment => segment.y > game.cameraY - 100);
             
             updateUI();
@@ -3295,6 +4082,18 @@
             // もぐら
             game.moles.forEach(mole => mole.draw());
             
+            // ミミズ
+            game.earthworms.forEach(earthworm => earthworm.draw());
+            
+            // 化石
+            game.fossils.forEach(fossil => fossil.draw());
+            
+            // 地下虫
+            game.undergroundBugs.forEach(bug => bug.draw());
+            
+            // 洞窟魚
+            game.caveFish.forEach(fish => fish.draw());
+            
             // 断層
             game.faults.forEach(fault => fault.draw());
             
@@ -3313,6 +4112,9 @@
             
             // 岩
             game.rocks.forEach(rock => rock.draw());
+            
+            // 白い石（柔らかい石）
+            game.softRocks.forEach(softRock => softRock.draw());
             
             // 蒸気孔
             game.steamVents.forEach(vent => vent.draw());
@@ -3478,26 +4280,26 @@
             const notification = document.createElement('div');
             notification.style.cssText = `
                 position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
+                top: 20px;
+                right: 20px;
                 background: rgba(0, 0, 0, 0.95);
                 color: #FFD700;
-                padding: 20px;
-                border-radius: 15px;
-                border: 3px solid #FF4500;
-                text-align: center;
+                padding: 15px;
+                border-radius: 10px;
+                border: 2px solid #FF4500;
+                text-align: left;
                 z-index: 2000;
-                box-shadow: 0 0 30px rgba(255, 69, 0, 0.8);
-                animation: fadeInOut 4s ease-in-out;
-                max-width: 80%;
-                font-size: 16px;
+                box-shadow: 0 0 20px rgba(255, 69, 0, 0.8);
+                animation: slideInFromRight 4s ease-in-out;
+                max-width: 300px;
+                font-size: 14px;
+                min-width: 250px;
             `;
             
             notification.innerHTML = `
-                <h3 style="margin: 0 0 10px 0; color: #FF4500; font-size: 20px;">🎉 深度 ${benchmark.depth}m 達成！</h3>
-                <div style="font-size: 18px; margin: 10px 0; color: #FFD700;">${benchmark.name}</div>
-                <div style="font-size: 14px; color: #87CEEB;">${benchmark.description}</div>
+                <h3 style="margin: 0 0 8px 0; color: #FF4500; font-size: 16px;">🎉 深度 ${benchmark.depth}m 達成！</h3>
+                <div style="font-size: 15px; margin: 5px 0; color: #FFD700; font-weight: bold;">${benchmark.name}</div>
+                <div style="font-size: 12px; color: #87CEEB; line-height: 1.3;">${benchmark.description}</div>
             `;
             
             // CSSアニメーションを追加
@@ -3505,11 +4307,11 @@
                 const style = document.createElement('style');
                 style.id = 'benchmarkAnimationStyle';
                 style.textContent = `
-                    @keyframes fadeInOut {
-                        0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
-                        20% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-                        80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-                        100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+                    @keyframes slideInFromRight {
+                        0% { opacity: 0; transform: translateX(100%); }
+                        15% { opacity: 1; transform: translateX(0); }
+                        85% { opacity: 1; transform: translateX(0); }
+                        100% { opacity: 0; transform: translateX(100%); }
                     }
                 `;
                 document.head.appendChild(style);
@@ -3730,6 +4532,7 @@
                     cooling: 1,
                     particles: [],
                     rocks: [],
+                    softRocks: [], // 白い石（柔らかい石）
                     steamVents: [],
                     magmaPools: [],
                     faults: [], // 断層
@@ -3737,6 +4540,10 @@
                     oilMoney: [], // オイルマネー
                     beams: [], // ビーム
                     moles: [], // もぐら
+                    earthworms: [], // ミミズ
+                    fossils: [], // 化石
+                    undergroundBugs: [], // 地下虫
+                    caveFish: [], // 洞窟魚
                     pipeSegments: [], // ドリルパイプのセグメント
                     maxDepth: 0,
                     maxTemp: 15,
@@ -3884,30 +4691,37 @@
             keys[e.key] = false;
         });
         
-        // タッチ操作対応
+        // タッチ操作対応（改善版）
         let touchStartX = null;
+        let touchStartY = null;
         let touchStartTime = null;
+        let isSwiping = false;
         
         canvas.addEventListener('touchstart', (e) => {
             touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
             touchStartTime = Date.now();
+            isSwiping = false;
             e.preventDefault();
         });
         
         canvas.addEventListener('touchmove', (e) => {
-            if (touchStartX !== null) {
+            if (touchStartX !== null && touchStartY !== null) {
                 const touchX = e.touches[0].clientX;
-                const diff = touchX - touchStartX;
+                const touchY = e.touches[0].clientY;
+                const diffX = touchX - touchStartX;
+                const diffY = touchY - touchStartY;
                 
-                if (diff < -30) {
-                    keys['ArrowLeft'] = true;
-                    keys['ArrowRight'] = false;
-                } else if (diff > 30) {
-                    keys['ArrowRight'] = true;
-                    keys['ArrowLeft'] = false;
-                } else {
-                    keys['ArrowLeft'] = false;
-                    keys['ArrowRight'] = false;
+                // 水平方向のスワイプ判定（垂直方向より大きい場合のみ）
+                if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 20) {
+                    isSwiping = true;
+                    if (diffX < -20) {
+                        keys['ArrowLeft'] = true;
+                        keys['ArrowRight'] = false;
+                    } else if (diffX > 20) {
+                        keys['ArrowRight'] = true;
+                        keys['ArrowLeft'] = false;
+                    }
                 }
             }
             e.preventDefault();
@@ -3915,20 +4729,26 @@
         
         canvas.addEventListener('touchend', (e) => {
             // タップ判定（短時間で移動距離が少ない場合）
-            if (touchStartX !== null && touchStartTime !== null) {
+            if (touchStartX !== null && touchStartTime !== null && !isSwiping) {
                 const touchEndTime = Date.now();
                 const touchDuration = touchEndTime - touchStartTime;
                 const touchEndX = e.changedTouches[0].clientX;
-                const touchDistance = Math.abs(touchEndX - touchStartX);
+                const touchEndY = e.changedTouches[0].clientY;
+                const touchDistance = Math.sqrt(
+                    Math.pow(touchEndX - touchStartX, 2) + 
+                    Math.pow(touchEndY - touchStartY, 2)
+                );
                 
-                // タップ判定: 300ms以下かつ移動距離30px以下
-                if (touchDuration < 300 && touchDistance < 30 && game.gameRunning) {
+                // タップ判定: 250ms以下かつ移動距離25px以下
+                if (touchDuration < 250 && touchDistance < 25 && game.gameRunning) {
                     handleSpaceKey();
                 }
             }
             
             touchStartX = null;
+            touchStartY = null;
             touchStartTime = null;
+            isSwiping = false;
             keys['ArrowLeft'] = false;
             keys['ArrowRight'] = false;
         });
@@ -4501,6 +5321,21 @@
         window.addEventListener('load', () => {
             const nameInput = document.getElementById('playerNameInput');
             nameInput.value = recordManager.playerName;
+            
+            // スマホでの画面ロックを防ぐ
+            if ('wakeLock' in navigator) {
+                navigator.wakeLock.request('screen').catch(err => {
+                    console.log('Wake Lock not supported:', err);
+                });
+            }
+            
+            // タッチデバイスでの最適化
+            if ('ontouchstart' in window) {
+                document.body.style.touchAction = 'manipulation';
+                document.body.style.webkitTouchCallout = 'none';
+                document.body.style.webkitUserSelect = 'none';
+                document.body.style.userSelect = 'none';
+            }
         });
     </script>
 </body>
