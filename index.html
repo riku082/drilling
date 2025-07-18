@@ -784,6 +784,66 @@
                 }
             }
             
+            // 亀裂部分との当たり判定
+            checkCrackCollision(drillX, drillY, drillWidth, drillHeight) {
+                const crackThickness = 15; // 亀裂の厚み
+                
+                for (let i = 0; i < this.crackPoints.length - 1; i++) {
+                    const p1 = this.crackPoints[i];
+                    const p2 = this.crackPoints[i + 1];
+                    
+                    // 線分の両端
+                    const x1 = p1.x;
+                    const y1 = this.y + p1.y;
+                    const x2 = p2.x;
+                    const y2 = this.y + p2.y;
+                    
+                    // ドリルの矩形と線分の交差判定
+                    if (this.lineIntersectsRect(x1, y1, x2, y2, 
+                        drillX - drillWidth/2, drillY - drillHeight/2, 
+                        drillWidth, drillHeight, crackThickness)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            
+            // 線分と矩形の交差判定（太い線として扱う）
+            lineIntersectsRect(x1, y1, x2, y2, rectX, rectY, rectWidth, rectHeight, thickness) {
+                // 太い線を矩形として扱う
+                const dx = x2 - x1;
+                const dy = y2 - y1;
+                const length = Math.sqrt(dx * dx + dy * dy);
+                
+                if (length === 0) return false;
+                
+                // 正規化されたベクトル
+                const nx = dx / length;
+                const ny = dy / length;
+                
+                // 垂直ベクトル
+                const px = -ny * thickness / 2;
+                const py = nx * thickness / 2;
+                
+                // 太い線の4つの角
+                const corners = [
+                    { x: x1 + px, y: y1 + py },
+                    { x: x1 - px, y: y1 - py },
+                    { x: x2 + px, y: y2 + py },
+                    { x: x2 - px, y: y2 - py }
+                ];
+                
+                // 任意の角がドリルの矩形内にあるかチェック
+                for (const corner of corners) {
+                    if (corner.x >= rectX && corner.x <= rectX + rectWidth &&
+                        corner.y >= rectY && corner.y <= rectY + rectHeight) {
+                        return true;
+                    }
+                }
+                
+                return false;
+            }
+            
             update() {
                 // 警告パーティクル
                 if (Math.random() < 0.3) {
@@ -1112,83 +1172,41 @@
                 game.drillDurability = Math.min(game.drillDurability, game.drillMaxDurability);
             }
             
-            // 掘削速度の自動増加（深度ボーナス + 加速度的増加）
-            if (game.depth % 300 === 0 && game.depth > 0) {  // 500m → 300mごとに加速
-                game.drillSpeed += 0.3;  // 0.1 → 0.3に増加
+            // 掘削速度の自動増加（緩やかに調整）
+            if (game.depth % 500 === 0 && game.depth > 0) {  // 500mごとに加速
+                game.drillSpeed += 0.15;  // より緩やかな増加
             }
             
-            // 2000m以降さらに加速（3000m → 2000mに早める）
-            if (game.depth > 2000) {
-                game.drillSpeed += 0.002 * (game.depth - 2000) / 100;  // 加速度を2倍に
+            // 3000m以降さらに加速（より緩やか）
+            if (game.depth > 3000) {
+                game.drillSpeed += 0.001 * (game.depth - 3000) / 200;  // 加速度を半分に
             }
             
-            // 断層との衝突チェック
+            // 最大速度制限を追加
+            game.drillSpeed = Math.min(game.drillSpeed, 8.0); // 最大速度を8.0に制限
+            
+            // 断層との衝突チェック（亀裂のみ）
             game.faults.forEach(fault => {
                 fault.update();
                 
-                // ドリルのサイズを考慮した当たり判定（より正確に）
-                const drillWidth = 60; // ドリルビットのサイズに合わせて調整
-                const drillLeft = game.drillX - drillWidth / 2;
-                const drillRight = game.drillX + drillWidth / 2;
-                const drillTop = game.drillY - 30; // ドリル上部
-                const drillBottom = game.drillY + 80; // ドリルビット下端まで
+                // ドリルのサイズ
+                const drillWidth = 60;
+                const drillHeight = 110; // ドリル全体の高さ
                 
-                // 断層の範囲
-                const faultTop = fault.y - fault.height / 2;
-                const faultBottom = fault.y + fault.height / 2;
-                
-                // 垂直方向の重なり判定
-                if (drillBottom > faultTop && drillTop < faultBottom) {
-                    // 断層の安全ゾーン（隙間）- より寛容に
-                    const safeZoneLeft = fault.leftX + 15; // 余裕を増やす
-                    const safeZoneRight = fault.rightX - 15;
+                // 亀裂との衝突判定
+                if (fault.checkCrackCollision(game.drillX, game.drillY, drillWidth, drillHeight)) {
+                    // 亀裂に直接衝突：重いダメージ
+                    game.drillDurability -= 3;
+                    hitObstacle = true;
                     
-                    // ドリル全体が安全ゾーン内にあるかチェック
-                    const isInSafeZone = (drillLeft >= safeZoneLeft && drillRight <= safeZoneRight);
-                    
-                    if (!isInSafeZone) {
-                        // 警告ゾーンの判定（段階的ダメージ）
-                        const warningZoneWidth = 25; // 警告ゾーンを広げる
-                        const leftWarningZone = safeZoneLeft - warningZoneWidth;
-                        const rightWarningZone = safeZoneRight + warningZoneWidth;
-                        
-                        // ドリルの一部が警告ゾーンにある場合
-                        const isInWarningZone = 
-                            (drillRight > leftWarningZone && drillLeft < safeZoneLeft) ||
-                            (drillLeft < rightWarningZone && drillRight > safeZoneRight);
-                        
-                        if (isInWarningZone) {
-                            // 警告段階：軽いダメージ
-                            game.drillDurability -= 0.3; // ダメージを軽減
-                            hitObstacle = true;
-                            
-                            // 警告エフェクト
-                            if (Math.random() < 0.15) {
-                                for (let i = 0; i < 2; i++) {
-                                    game.particles.push(new Particle(game.drillX, game.drillY, 'spark'));
-                                }
-                            }
-                        } else {
-                            // 危険ゾーン：重いダメージ
-                            const isDangerZone = 
-                                drillRight < leftWarningZone || drillLeft > rightWarningZone;
-                            
-                            if (isDangerZone) {
-                                // 即座にゲームオーバーではなく、重いダメージ
-                                game.drillDurability -= 5; // 重いダメージ
-                                hitObstacle = true;
-                                
-                                // 激しいエフェクト
-                                for (let i = 0; i < 8; i++) {
-                                    game.particles.push(new Particle(game.drillX, game.drillY, 'spark'));
-                                }
-                                
-                                // 画面揺れ
-                                canvas.style.transform = `translate(${Math.random() * 10 - 5}px, ${Math.random() * 10 - 5}px)`;
-                                setTimeout(() => canvas.style.transform = '', 100);
-                            }
-                        }
+                    // 衝突エフェクト
+                    for (let i = 0; i < 10; i++) {
+                        game.particles.push(new Particle(game.drillX, game.drillY, 'spark'));
                     }
+                    
+                    // 画面揺れ
+                    canvas.style.transform = `translate(${Math.random() * 15 - 7.5}px, ${Math.random() * 15 - 7.5}px)`;
+                    setTimeout(() => canvas.style.transform = '', 120);
                 }
             });
             
