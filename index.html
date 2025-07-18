@@ -65,10 +65,75 @@
             min-width: min(200px, 40vw);
         }
 
+        /* スマホ専用のステータス表示調整 */
+        @media (max-width: 480px) {
+            #stats {
+                top: 5px !important;
+                left: 5px !important;
+                transform: scale(0.6) !important;
+                max-width: 150px !important;
+                font-size: 10px !important;
+            }
+
+            .info-panel {
+                padding: 8px !important;
+                font-size: 10px !important;
+            }
+        }
+
         #controls {
             top: 20px;
             right: 20px;
             pointer-events: all;
+        }
+
+        /* スマホ版対応 */
+        @media (max-width: 768px) {
+            #brazilDistanceButton {
+                position: absolute !important;
+                top: 10px !important;
+                right: 10px !important;
+                z-index: 1000;
+            }
+            
+            #brazilDistanceButton button {
+                padding: 8px 12px !important;
+                font-size: 12px !important;
+                touch-action: manipulation;
+                -webkit-tap-highlight-color: transparent;
+            }
+
+            #startScreen h1 {
+                margin-top: 60px !important;
+                font-size: 36px !important;
+            }
+
+            .instructions {
+                font-size: 14px !important;
+                margin: 15px 10px !important;
+                line-height: 1.4 !important;
+            }
+
+            #startScreen button {
+                font-size: 16px !important;
+                padding: 12px 24px !important;
+                margin: 8px !important;
+            }
+
+            #titleRanking {
+                max-width: 90% !important;
+                margin: 15px auto !important;
+                padding: 15px !important;
+            }
+
+            #titleRanking h3 {
+                font-size: 20px !important;
+            }
+
+            .title-record-item {
+                font-size: 14px !important;
+                padding: 10px !important;
+            }
         }
 
         #gameOver {
@@ -87,6 +152,50 @@
             max-width: 80%;
             max-height: 80%;
             overflow-y: auto;
+        }
+
+        /* スマホ版ゲームオーバー調整 */
+        @media (max-width: 768px) {
+            #gameOver {
+                max-width: 95% !important;
+                max-height: 90% !important;
+                padding: 20px !important;
+                font-size: 14px !important;
+            }
+
+            #gameOver h2 {
+                font-size: 24px !important;
+                margin: 10px 0 !important;
+            }
+
+            #gameOver h3 {
+                font-size: 18px !important;
+                margin: 8px 0 !important;
+            }
+
+            #gameOver p {
+                font-size: 13px !important;
+                margin: 5px 0 !important;
+            }
+
+            #gameOver button {
+                font-size: 14px !important;
+                padding: 10px 16px !important;
+                margin: 5px !important;
+            }
+
+            #playerNameInput {
+                width: 90% !important;
+                font-size: 14px !important;
+                padding: 8px !important;
+                margin: 8px 0 !important;
+            }
+
+            .record-item {
+                font-size: 12px !important;
+                padding: 8px !important;
+                margin: 4px 0 !important;
+            }
         }
         
         #playerNameInput {
@@ -328,19 +437,26 @@
             bottom: min(20px, 2vh);
             left: 50%;
             transform: translateX(-50%);
-            display: none;
-            gap: min(20px, 3vw);
+            display: flex;
+            gap: min(15px, 2.5vw);
             z-index: 1000;
         }
 
+        /* デスクトップでは非表示 */
+        @media (min-width: 769px) and (min-height: 601px) {
+            #mobileControls {
+                display: none !important;
+            }
+        }
+
         .touch-button {
-            width: min(80px, 15vw);
-            height: min(80px, 15vw);
+            width: min(70px, 14vw);
+            height: min(70px, 14vw);
             background: rgba(255, 69, 0, 0.8);
             border: 3px solid #FFD700;
             border-radius: 50%;
             color: white;
-            font-size: min(24px, 4vw);
+            font-size: min(20px, 4vw);
             font-weight: bold;
             display: flex;
             align-items: center;
@@ -351,6 +467,16 @@
             touch-action: manipulation;
         }
 
+        #spaceButton {
+            background: rgba(135, 206, 235, 0.8);
+            border-color: #87CEEB;
+        }
+
+        #spaceButton:active {
+            background: rgba(135, 206, 235, 1);
+            transform: scale(0.95);
+        }
+
         .touch-button:active {
             background: rgba(255, 69, 0, 1);
             transform: scale(0.95);
@@ -358,7 +484,7 @@
 
         @media (max-width: 768px) or (max-height: 600px) {
             #mobileControls {
-                display: flex;
+                display: flex !important;
             }
             
             body {
@@ -392,10 +518,11 @@
             }
             
             #stats {
-                top: max(10px, 1vh);
-                left: max(10px, 1vw);
-                transform: scale(0.9);
+                top: max(5px, 0.5vh);
+                left: max(5px, 1vw);
+                transform: scale(0.7);
                 transform-origin: top left;
+                max-width: min(180px, 35vw);
             }
             
             #mobileControls {
@@ -439,7 +566,34 @@
                 }
                 
                 #stats {
-                    transform: scale(0.8);
+                    transform: scale(0.65);
+                    max-width: min(160px, 32vw);
+                }
+
+                #gameOver {
+                    max-width: 98% !important;
+                    max-height: 95% !important;
+                    padding: 15px !important;
+                    font-size: 12px !important;
+                }
+
+                #gameOver h2 {
+                    font-size: 20px !important;
+                }
+
+                #gameOver h3 {
+                    font-size: 16px !important;
+                }
+
+                #gameOver button {
+                    font-size: 12px !important;
+                    padding: 8px 12px !important;
+                    margin: 3px !important;
+                }
+
+                #playerNameInput {
+                    font-size: 12px !important;
+                    padding: 6px !important;
                 }
                 
                 .touch-button {
@@ -490,8 +644,8 @@
         
         <div id="startScreen">
             <!-- ブラジルまでの距離ボタン -->
-            <div id="brazilDistanceButton" style="position: absolute; top: 20px; right: 20px;">
-                <button onclick="showBrazilDistance()" style="background: #228B22; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-size: 14px;">
+            <div id="brazilDistanceButton" style="position: absolute; top: 20px; right: 20px; z-index: 1000;">
+                <button onclick="showBrazilDistance()" style="background: #228B22; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-size: 14px; touch-action: manipulation; -webkit-tap-highlight-color: transparent;">
                     🌍 ブラジルまでの距離
                 </button>
             </div>
@@ -606,6 +760,7 @@
         <!-- モバイル用タッチコントロール -->
         <div id="mobileControls">
             <div class="touch-button" id="leftButton">←</div>
+            <div class="touch-button" id="spaceButton">💧</div>
             <div class="touch-button" id="rightButton">→</div>
         </div>
     </div>
@@ -1243,6 +1398,7 @@
             starMode: false, // スター状態フラグ
             starModeTimer: 0, // スター状態残り時間（秒）
             starModeDuration: 5, // スター状態継続時間（秒）
+            lastBenchmarkDepth: 0, // 最後に表示したベンチマークの深度
             comboCount: 0, // コンボカウント
             comboTimer: 0, // コンボタイマー（秒）
             comboMaxTime: 3, // コンボの最大持続時間（秒）
@@ -2642,10 +2798,13 @@
             game.moles.forEach(mole => {
                 mole.update();
                 
-                // もぐらとの衝突（ダメージは少ない）
+                // もぐらとの衝突（先端ビットのみ、ダメージは少ない）
+                const bitTipX = game.drillX;
+                const bitTipY = game.drillY + 110; // ドリル全体の最下端
+                
                 if (!mole.fleeing &&
-                    Math.abs(mole.x - game.drillX) < 30 &&
-                    Math.abs(mole.y - game.drillY) < 30) {
+                    Math.abs(mole.x - bitTipX) < 20 &&
+                    Math.abs(mole.y - bitTipY) < 20) {
                     
                     game.drillDurability -= 5;
                     hitObstacle = true;
@@ -2662,11 +2821,16 @@
                 }
             });
             
-            // 岩との衝突チェック
+            // 岩との衝突チェック（先端ビットのみ）
             game.rocks.forEach(rock => {
+                // ビット先端位置（ドリルの最下端）
+                const bitTipX = game.drillX;
+                const bitTipY = game.drillY + 110; // ドリル全体の最下端
+                const bitTipRadius = 25; // ビット先端の小さな範囲
+                
                 if (!rock.hit &&
-                    Math.abs(rock.x - game.drillX) < (rock.width/2 + 20) &&
-                    Math.abs(rock.y - game.drillY) < (rock.height/2 + 30)) {
+                    Math.abs(rock.x - bitTipX) < (rock.width/2 + bitTipRadius) &&
+                    Math.abs(rock.y - bitTipY) < (rock.height/2 + bitTipRadius)) {
                     
                     rock.hit = true;
                     game.drillDurability -= rock.hardness * 3;
@@ -2795,16 +2959,19 @@
                 }
             });
             
-            // マグマ溜まりのダメージ
+            // マグマ溜まりのダメージ（先端ビットのみ）
             game.magmaPools.forEach(pool => {
                 pool.update();
-                if (Math.abs(pool.x - game.drillX) < pool.width/2 &&
-                    Math.abs(pool.y - game.drillY) < 50) {
+                const bitTipX = game.drillX;
+                const bitTipY = game.drillY + 110; // ドリル全体の最下端
+                
+                if (Math.abs(pool.x - bitTipX) < pool.width/2 &&
+                    Math.abs(pool.y - bitTipY) < 30) {
                     game.drillDurability -= 0.5;
                     hitObstacle = true;
                     
                     if (Math.random() < 0.2) {
-                        game.particles.push(new Particle(game.drillX, game.drillY, 'lava'));
+                        game.particles.push(new Particle(bitTipX, bitTipY, 'lava'));
                     }
                 }
             });
@@ -2837,16 +3004,18 @@
             // 最大速度制限を追加
             game.drillSpeed = Math.min(game.drillSpeed, 8.0); // 最大速度を8.0に制限
             
-            // 断層との衝突チェック（亀裂のみ）
+            // 断層との衝突チェック（先端ビットのみ）
             game.faults.forEach(fault => {
                 fault.update();
                 
-                // ドリルのサイズ
-                const drillWidth = 60;
-                const drillHeight = 110; // ドリル全体の高さ
+                // ビット先端位置とサイズ
+                const bitTipX = game.drillX;
+                const bitTipY = game.drillY + 110; // ドリル全体の最下端
+                const bitTipWidth = 50; // ビット先端の幅
+                const bitTipHeight = 30; // ビット先端の高さ
                 
-                // 亀裂との衝突判定
-                if (fault.checkCrackCollision(game.drillX, game.drillY, drillWidth, drillHeight)) {
+                // 亀裂との衝突判定（先端ビットのみ）
+                if (fault.checkCrackCollision(bitTipX, bitTipY, bitTipWidth, bitTipHeight)) {
                     // 亀裂に直接衝突：重いダメージ
                     game.drillDurability -= 3;
                     hitObstacle = true;
@@ -3279,11 +3448,98 @@
             }
         }
         
+        // 深度ベンチマークデータ
+        const depthBenchmarks = [
+            { depth: 100, name: "🏢 10階建てビル", description: "一般的なオフィスビルの高さ" },
+            { depth: 143, name: "🗼 セリオン", description: "秋田県で最も高いタワー" },
+            { depth: 333, name: "🗼 東京タワー", description: "逆さまにした東京タワーの高さ" },
+            { depth: 450, name: "🏢 エンパイアステートビル", description: "ニューヨークの象徴的な高層ビル" },
+            { depth: 634, name: "🗼 東京スカイツリー", description: "日本最高の電波塔" },
+            { depth: 828, name: "🏢 ブルジュ・ハリファ", description: "世界一高い超高層ビル" },
+            { depth: 1000, name: "🚇 地下鉄道の深い駅", description: "都市部の深い地下駅レベル" },
+            { depth: 1642, name: "🏔️ ツインタワーズ", description: "マレーシアの象徴的な超高層ビル" },
+            { depth: 2000, name: "⛰️ 富士山の半分", description: "日本最高峰の約半分の高さ" },
+            { depth: 3000, name: "🏄 深海用潜水艦", description: "深海探査用潜水艦の到達深度" },
+            { depth: 4000, name: "🌊 太平洋の平均深度", description: "世界の海の平均深度" },
+            { depth: 5000, name: "🕳️ ソビエトのコラ半島最深部", description: "人類最深の科学掘削プロジェクト開始" },
+            { depth: 6000, name: "🌋 地殻下部", description: "大陸地殻の下部領域" },
+            { depth: 7000, name: "🌊 日本海溝の深い部分", description: "日本近海の深海溝" },
+            { depth: 8000, name: "🏔️ エベレスト山頂", description: "世界最高峰の高さ" },
+            { depth: 9000, name: "🌊 海洋深層", description: "深海の本格的な領域" },
+            { depth: 10000, name: "🌊 マリアナ海溝付近", description: "世界最深の海溝に近づく" },
+            { depth: 11000, name: "🌊 チャレンジャー深淵", description: "地球上最深の場所" },
+            { depth: 12262, name: "🕳️ コラ半島超深度掘削", description: "ソビエトの人類最深掘削記録" },
+            { depth: 15000, name: "🌋 地殻・マントル境界付近", description: "地球内部構造の境界領域" },
+            { depth: 18000, name: "🌍 ブラジルまでの直線距離", description: "秋田からブラジルまでの直線距離" }
+        ];
+
+        function showBenchmarkNotification(benchmark) {
+            // ベンチマーク通知を表示
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: rgba(0, 0, 0, 0.95);
+                color: #FFD700;
+                padding: 20px;
+                border-radius: 15px;
+                border: 3px solid #FF4500;
+                text-align: center;
+                z-index: 2000;
+                box-shadow: 0 0 30px rgba(255, 69, 0, 0.8);
+                animation: fadeInOut 4s ease-in-out;
+                max-width: 80%;
+                font-size: 16px;
+            `;
+            
+            notification.innerHTML = `
+                <h3 style="margin: 0 0 10px 0; color: #FF4500; font-size: 20px;">🎉 深度 ${benchmark.depth}m 達成！</h3>
+                <div style="font-size: 18px; margin: 10px 0; color: #FFD700;">${benchmark.name}</div>
+                <div style="font-size: 14px; color: #87CEEB;">${benchmark.description}</div>
+            `;
+            
+            // CSSアニメーションを追加
+            if (!document.getElementById('benchmarkAnimationStyle')) {
+                const style = document.createElement('style');
+                style.id = 'benchmarkAnimationStyle';
+                style.textContent = `
+                    @keyframes fadeInOut {
+                        0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+                        20% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+                        80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+                        100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            document.body.appendChild(notification);
+            
+            // 4秒後に除去
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 4000);
+        }
+
         function updateUI() {
             document.getElementById('depth').textContent = game.depth;
             document.getElementById('temperature').textContent = Math.floor(game.temperature);
             document.getElementById('drillSpeed').textContent = game.drillSpeed.toFixed(1);
             document.getElementById('drillEnergy').style.width = `${Math.max(0, (game.drillDurability / game.drillMaxDurability) * 100)}%`;
+            
+            // ベンチマークチェック
+            const currentBenchmark = depthBenchmarks.find(b => 
+                game.depth >= b.depth && game.lastBenchmarkDepth < b.depth
+            );
+            
+            if (currentBenchmark) {
+                showBenchmarkNotification(currentBenchmark);
+                game.lastBenchmarkDepth = currentBenchmark.depth;
+            }
             
             // 耐久度による色変更
             const durabilityRatio = game.drillDurability / game.drillMaxDurability;
@@ -3467,6 +3723,7 @@
                     starMode: false,
                     starModeTimer: 0,
                     starModeDuration: 5,
+                    lastBenchmarkDepth: 0,
                     comboCount: 0,
                     comboTimer: 0,
                     comboMaxTime: 3,
@@ -3629,9 +3886,11 @@
         
         // タッチ操作対応
         let touchStartX = null;
+        let touchStartTime = null;
         
         canvas.addEventListener('touchstart', (e) => {
             touchStartX = e.touches[0].clientX;
+            touchStartTime = Date.now();
             e.preventDefault();
         });
         
@@ -3654,8 +3913,22 @@
             e.preventDefault();
         });
         
-        canvas.addEventListener('touchend', () => {
+        canvas.addEventListener('touchend', (e) => {
+            // タップ判定（短時間で移動距離が少ない場合）
+            if (touchStartX !== null && touchStartTime !== null) {
+                const touchEndTime = Date.now();
+                const touchDuration = touchEndTime - touchStartTime;
+                const touchEndX = e.changedTouches[0].clientX;
+                const touchDistance = Math.abs(touchEndX - touchStartX);
+                
+                // タップ判定: 300ms以下かつ移動距離30px以下
+                if (touchDuration < 300 && touchDistance < 30 && game.gameRunning) {
+                    handleSpaceKey();
+                }
+            }
+            
             touchStartX = null;
+            touchStartTime = null;
             keys['ArrowLeft'] = false;
             keys['ArrowRight'] = false;
         });
@@ -3663,6 +3936,7 @@
         // モバイル用タッチボタン
         const leftButton = document.getElementById('leftButton');
         const rightButton = document.getElementById('rightButton');
+        const spaceButton = document.getElementById('spaceButton');
         
         leftButton.addEventListener('touchstart', (e) => {
             e.preventDefault();
@@ -3682,6 +3956,17 @@
         rightButton.addEventListener('touchend', (e) => {
             e.preventDefault();
             keys['ArrowRight'] = false;
+        });
+        
+        // スペースボタン（泥水ビーム）
+        spaceButton.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            handleSpaceKey();
+        });
+        
+        spaceButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            handleSpaceKey();
         });
         
         // マウスでも動作するように
@@ -3795,7 +4080,7 @@
                         ${showRank ? `<div class="record-rank">${index + 1}位</div>` : ''}
                         <div class="record-info">
                             <div><strong>${record.playerName}</strong></div>
-                            <div>🏆 深度: ${record.depth}m | 温度: ${record.temperature}℃</div>
+                            <div>🏆 深度: ${record.depth}m</div>
                             <div>💰 オイルマネー: ${record.oilMoneyStock} | 🔥 コンボ: ${record.comboCount}</div>
                             <div>📅 日時: ${date}</div>
                         </div>
@@ -3821,7 +4106,7 @@
                         ${showRank ? `<div class="record-rank">${index + 1}位</div>` : ''}
                         <div class="record-info">
                             <div><strong>${record.playerName}</strong></div>
-                            <div>深度: ${record.depth}m | 温度: ${record.temperature}℃</div>
+                            <div>深度: ${record.depth}m</div>
                             <div>オイルマネー: ${record.oilMoneyStock} | コンボ: ${record.comboCount}</div>
                             <div>日時: ${date}</div>
                         </div>
@@ -3882,7 +4167,7 @@
                         <div class="title-record-info">
                             <div><strong>${record.playerName}</strong></div>
                             <div style="font-size: 14px; color: #ccc;">
-                                温度: ${record.temperature}℃ | 日時: ${date}
+                                日時: ${date}
                             </div>
                         </div>
                         <div class="title-record-depth">${record.depth}m</div>
@@ -4202,7 +4487,7 @@
                         <div style="flex: 1; margin-left: 12px; text-align: left;">
                             <div style="font-size: 16px; font-weight: bold; margin-bottom: 4px; color: #FFFFFF;">${record.playerName}</div>
                             <div style="font-size: 14px; color: #ccc; line-height: 1.3;">
-                                温度: ${record.temperature}℃ | ${date}
+                                ${date}
                             </div>
                         </div>
                         <div style="font-weight: bold; color: #FF4500; font-size: 18px; text-align: right;">${record.depth}m</div>
