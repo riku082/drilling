@@ -769,22 +769,35 @@
         class Fault {
             constructor(y) {
                 this.y = y;
-                this.leftX = Math.random() * 200 + 100;
-                this.rightX = this.leftX + Math.random() * 200 + 150;
-                this.height = 30;
-                this.warningHeight = 100;
+                this.startX = Math.random() * (canvas.width - 400) + 200; // 断層の開始X位置
+                this.length = Math.random() * 400 + 300; // 断層の長さ（300-700px）
+                this.angle = (Math.random() * 60 - 30) * Math.PI / 180; // -30度から+30度の角度
+                this.warningWidth = 60; // 警告範囲の幅
                 this.particles = [];
                 this.crackPoints = [];
-                // 亀裂の形状を生成
-                const numPoints = Math.floor(Math.random() * 5) + 5; // 5-9 points
+                
+                // 斜めの亀裂の形状を生成
+                const numPoints = Math.floor(Math.random() * 8) + 12; // 12-19 points
                 for (let i = 0; i <= numPoints; i++) {
-                    const x = this.leftX + (this.rightX - this.leftX) * (i / numPoints);
-                    const yOffset = (Math.random() - 0.5) * 40; // Vertical variation
-                    this.crackPoints.push({ x: x, y: yOffset });
+                    const progress = i / numPoints;
+                    
+                    // 基本の斜めライン
+                    const baseX = Math.cos(this.angle) * this.length * progress;
+                    const baseY = Math.sin(this.angle) * this.length * progress;
+                    
+                    // ランダムなずれを追加（より自然な亀裂に）
+                    const randomOffset = (Math.random() - 0.5) * 40;
+                    const perpX = -Math.sin(this.angle) * randomOffset;
+                    const perpY = Math.cos(this.angle) * randomOffset;
+                    
+                    this.crackPoints.push({ 
+                        x: baseX + perpX, 
+                        y: baseY + perpY 
+                    });
                 }
             }
             
-            // 亀裂部分との当たり判定
+            // 亀裂部分との当たり判定（斜め対応）
             checkCrackCollision(drillX, drillY, drillWidth, drillHeight) {
                 const crackThickness = 15; // 亀裂の厚み
                 
@@ -792,10 +805,10 @@
                     const p1 = this.crackPoints[i];
                     const p2 = this.crackPoints[i + 1];
                     
-                    // 線分の両端
-                    const x1 = p1.x;
+                    // 線分の両端（斜めの亀裂）
+                    const x1 = this.startX + p1.x;
                     const y1 = this.y + p1.y;
-                    const x2 = p2.x;
+                    const x2 = this.startX + p2.x;
                     const y2 = this.y + p2.y;
                     
                     // ドリルの矩形と線分の交差判定
@@ -845,12 +858,16 @@
             }
             
             update() {
-                // 警告パーティクル
+                // 警告パーティクル（斜め断層用）
                 if (Math.random() < 0.3) {
-                    const x = this.leftX + Math.random() * (this.rightX - this.leftX);
+                    // 断層線上の任意の点でパーティクル生成
+                    const progress = Math.random();
+                    const baseX = Math.cos(this.angle) * this.length * progress;
+                    const baseY = Math.sin(this.angle) * this.length * progress;
+                    
                     this.particles.push({
-                        x: x,
-                        y: this.y,
+                        x: this.startX + baseX + (Math.random() - 0.5) * this.warningWidth,
+                        y: this.y + baseY + (Math.random() - 0.5) * 30,
                         vx: (Math.random() - 0.5) * 2,
                         vy: Math.random() * -2,
                         life: 1,
@@ -872,57 +889,85 @@
             draw() {
                 const screenY = this.y - game.cameraY;
                 
-                if (screenY < -this.warningHeight || screenY > canvas.height + 50) return;
+                // 断層の境界を計算（斜め線の場合）
+                const endX = this.startX + Math.cos(this.angle) * this.length;
+                const endY = this.y + Math.sin(this.angle) * this.length;
+                const screenEndY = endY - game.cameraY;
                 
-                // 警告ゾーン（断層の上）
-                if (screenY > -this.warningHeight && screenY < this.height) {
+                // 画面外の場合は描画しない
+                const minY = Math.min(screenY, screenEndY);
+                const maxY = Math.max(screenY, screenEndY);
+                if (maxY < -50 || minY > canvas.height + 50) return;
+                
+                // 警告ゾーン（断層の両側に沿って）
+                if (minY < canvas.height && maxY > 0) {
                     ctx.save();
-                    const gradient = ctx.createLinearGradient(0, screenY - this.warningHeight, 0, screenY);
+                    ctx.globalAlpha = 0.4;
+                    
+                    // 断層に沿った警告エリアを描画
+                    const perpX = -Math.sin(this.angle) * this.warningWidth;
+                    const perpY = Math.cos(this.angle) * this.warningWidth;
+                    
+                    // 警告ゾーンの四角形
+                    const warningPoints = [
+                        { x: this.startX + perpX, y: screenY + perpY },
+                        { x: this.startX - perpX, y: screenY - perpY },
+                        { x: endX - perpX, y: screenEndY - perpY },
+                        { x: endX + perpX, y: screenEndY + perpY }
+                    ];
+                    
+                    // グラデーション警告ゾーン
+                    const gradient = ctx.createLinearGradient(
+                        this.startX - perpX, screenY - perpY,
+                        this.startX + perpX, screenY + perpY
+                    );
                     gradient.addColorStop(0, 'rgba(255, 0, 0, 0)');
-                    gradient.addColorStop(0.7, 'rgba(255, 0, 0, 0.4)');
-                    gradient.addColorStop(1, 'rgba(255, 0, 0, 0.6)');
+                    gradient.addColorStop(0.4, 'rgba(255, 0, 0, 0.3)');
+                    gradient.addColorStop(0.6, 'rgba(255, 0, 0, 0.3)');
+                    gradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
+                    
                     ctx.fillStyle = gradient;
-                    ctx.fillRect(0, screenY - this.warningHeight, this.leftX + 10, this.warningHeight);
-                    ctx.fillRect(this.rightX - 10, screenY - this.warningHeight, canvas.width - (this.rightX - 10), this.warningHeight);
+                    ctx.beginPath();
+                    ctx.moveTo(warningPoints[0].x, warningPoints[0].y);
+                    for (let i = 1; i < warningPoints.length; i++) {
+                        ctx.lineTo(warningPoints[i].x, warningPoints[i].y);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
                     ctx.restore();
                 }
                 
-                // 安全ゾーン（緑色で表示）
-                if (screenY > -this.warningHeight && screenY < this.height + 20) {
-                    ctx.save();
-                    const safeGradient = ctx.createLinearGradient(0, screenY - this.warningHeight, 0, screenY + 20);
-                    safeGradient.addColorStop(0, 'rgba(0, 255, 0, 0.1)');
-                    safeGradient.addColorStop(0.5, 'rgba(0, 255, 0, 0.3)');
-                    safeGradient.addColorStop(1, 'rgba(0, 255, 0, 0.1)');
-                    ctx.fillStyle = safeGradient;
-                    ctx.fillRect(this.leftX + 10, screenY - this.warningHeight, 
-                                (this.rightX - 10) - (this.leftX + 10), this.warningHeight + 20);
-                    ctx.restore();
-                }
-                
-                // 断層本体（亀裂のように描画）
+                // 断層本体（斜めの亀裂として描画）
                 ctx.save();
                 ctx.strokeStyle = '#333333'; // 亀裂の色
-                ctx.lineWidth = 10; // 亀裂の太さ
+                ctx.lineWidth = 12; // 亀裂の太さを少し太く
                 ctx.shadowBlur = 15;
                 ctx.shadowColor = '#000';
 
                 ctx.beginPath();
-                ctx.moveTo(this.crackPoints[0].x, screenY + this.crackPoints[0].y);
-                for (let i = 1; i < this.crackPoints.length; i++) {
-                    ctx.lineTo(this.crackPoints[i].x, screenY + this.crackPoints[i].y);
+                if (this.crackPoints.length > 0) {
+                    const firstPoint = this.crackPoints[0];
+                    ctx.moveTo(this.startX + firstPoint.x, this.y + firstPoint.y - game.cameraY);
+                    for (let i = 1; i < this.crackPoints.length; i++) {
+                        const point = this.crackPoints[i];
+                        ctx.lineTo(this.startX + point.x, this.y + point.y - game.cameraY);
+                    }
                 }
                 ctx.stroke();
 
                 // 亀裂の光る縁
                 ctx.strokeStyle = '#FF0000';
-                ctx.lineWidth = 3;
-                ctx.shadowBlur = 10;
+                ctx.lineWidth = 4;
+                ctx.shadowBlur = 12;
                 ctx.shadowColor = '#FF0000';
                 ctx.beginPath();
-                ctx.moveTo(this.crackPoints[0].x, screenY + this.crackPoints[0].y);
-                for (let i = 1; i < this.crackPoints.length; i++) {
-                    ctx.lineTo(this.crackPoints[i].x, screenY + this.crackPoints[i].y);
+                if (this.crackPoints.length > 0) {
+                    const firstPoint = this.crackPoints[0];
+                    ctx.moveTo(this.startX + firstPoint.x, this.y + firstPoint.y - game.cameraY);
+                    for (let i = 1; i < this.crackPoints.length; i++) {
+                        const point = this.crackPoints[i];
+                        ctx.lineTo(this.startX + point.x, this.y + point.y - game.cameraY);
+                    }
                 }
                 ctx.stroke();
                 
@@ -937,15 +982,24 @@
                 
                 ctx.restore();
                 
-                // 警告テキスト
-                if (screenY > 0 && screenY < canvas.height) {
+                // 警告テキスト（断層の中央に表示）
+                const centerX = this.startX + Math.cos(this.angle) * this.length / 2;
+                const centerY = this.y + Math.sin(this.angle) * this.length / 2;
+                const screenCenterY = centerY - game.cameraY;
+                
+                if (screenCenterY > 40 && screenCenterY < canvas.height - 40 && 
+                    centerX > 0 && centerX < canvas.width) {
                     ctx.save();
                     ctx.fillStyle = '#FF0000';
-                    ctx.font = 'bold 24px Arial'; // 20pxから増加
+                    ctx.font = 'bold 18px Arial';
                     ctx.textAlign = 'center';
-                    ctx.shadowBlur = 15; // 10から増加
+                    ctx.shadowBlur = 15;
                     ctx.shadowColor = '#FF0000';
-                    ctx.fillText('⚠ 断層 ⚠', canvas.width / 2, screenY - 40);
+                    
+                    // テキストを断層の角度に合わせて回転
+                    ctx.translate(centerX, screenCenterY - 30);
+                    ctx.rotate(this.angle);
+                    ctx.fillText('⚠ 断層 ⚠', 0, 0);
                     ctx.restore();
                 }
             }
