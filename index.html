@@ -340,11 +340,17 @@
                 </div>
                 <div style="font-size: 12px;">ドリル耐久度</div>
                 
+                <div style="margin-top: 10px; font-size: 14px;">💰 オイルマネー: <span class="stat-value" id="oilMoneyCount">0</span></div>
                 <div class="energy-bar" style="margin-top: 10px;">
                     <div class="energy-fill" id="beamEnergy"></div>
                 </div>
-                <div style="font-size: 12px;">泥水ビーム <span id="beamStatus">充電中...</span></div>
+                <div style="font-size: 12px;">泥水ビーム <span id="beamStatus">オイルマネーを集めよう！</span></div>
                 <div id="warningText" class="warning" style="display: none;">⚠️ 高温注意！</div>
+            </div>
+            
+            <!-- 音声コントロール -->
+            <div id="audioControls" style="position: absolute; top: 20px; right: 20px; pointer-events: all;">
+                <button id="muteButton" style="font-size: 12px; padding: 5px 10px; background: rgba(0,0,0,0.7); color: white; border: 1px solid #FF4500;">🔊 音声ON</button>
             </div>
         </div>
         
@@ -386,6 +392,239 @@
         drillBitImage.onload = function() {
             imageLoaded = true;
         };
+        
+        // オーディオシステム
+        class AudioManager {
+            constructor() {
+                this.audioContext = null;
+                this.masterVolume = 0.5;
+                this.sfxVolume = 0.7;
+                this.musicVolume = 0.3;
+                this.muted = false;
+                this.sounds = {};
+                this.musicLoop = null;
+                this.init();
+            }
+            
+            init() {
+                try {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    this.createSounds();
+                } catch (e) {
+                    console.warn('Web Audio API not supported:', e);
+                }
+            }
+            
+            createSounds() {
+                // 掘削音（低い連続音）
+                this.sounds.drilling = this.createDrillingSound();
+                // 岩石破壊音
+                this.sounds.rockBreak = this.createRockBreakSound();
+                // オイルマネー獲得音
+                this.sounds.oilMoney = this.createOilMoneySound();
+                // スター状態開始音
+                this.sounds.starMode = this.createStarModeSound();
+                // ビーム発射音
+                this.sounds.beam = this.createBeamSound();
+                // 衝突音
+                this.sounds.collision = this.createCollisionSound();
+                // 警告音
+                this.sounds.warning = this.createWarningSound();
+            }
+            
+            createOscillator(frequency, type = 'sine') {
+                if (!this.audioContext) return null;
+                const oscillator = this.audioContext.createOscillator();
+                oscillator.frequency.value = frequency;
+                oscillator.type = type;
+                return oscillator;
+            }
+            
+            createGain(volume = 1) {
+                if (!this.audioContext) return null;
+                const gain = this.audioContext.createGain();
+                gain.gain.value = volume * this.masterVolume * (this.muted ? 0 : 1);
+                return gain;
+            }
+            
+            createDrillingSound() {
+                return () => {
+                    if (!this.audioContext) return;
+                    const osc = this.createOscillator(80 + Math.random() * 20, 'sawtooth');
+                    const gain = this.createGain(0.3 * this.sfxVolume);
+                    const filter = this.audioContext.createBiquadFilter();
+                    filter.type = 'lowpass';
+                    filter.frequency.value = 200;
+                    
+                    osc.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(this.audioContext.destination);
+                    
+                    osc.start();
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.1);
+                    osc.stop(this.audioContext.currentTime + 0.1);
+                };
+            }
+            
+            createRockBreakSound() {
+                return () => {
+                    if (!this.audioContext) return;
+                    const noise = this.audioContext.createBufferSource();
+                    const buffer = this.audioContext.createBuffer(1, 4410, 44100);
+                    const data = buffer.getChannelData(0);
+                    
+                    for (let i = 0; i < 4410; i++) {
+                        data[i] = Math.random() * 2 - 1;
+                    }
+                    
+                    noise.buffer = buffer;
+                    const gain = this.createGain(0.4 * this.sfxVolume);
+                    const filter = this.audioContext.createBiquadFilter();
+                    filter.type = 'bandpass';
+                    filter.frequency.value = 800;
+                    
+                    noise.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(this.audioContext.destination);
+                    
+                    noise.start();
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.1);
+                };
+            }
+            
+            createOilMoneySound() {
+                return () => {
+                    if (!this.audioContext) return;
+                    const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
+                    
+                    notes.forEach((freq, i) => {
+                        const osc = this.createOscillator(freq, 'sine');
+                        const gain = this.createGain(0.3 * this.sfxVolume);
+                        
+                        osc.connect(gain);
+                        gain.connect(this.audioContext.destination);
+                        
+                        const startTime = this.audioContext.currentTime + i * 0.1;
+                        osc.start(startTime);
+                        gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.2);
+                        osc.stop(startTime + 0.2);
+                    });
+                };
+            }
+            
+            createStarModeSound() {
+                return () => {
+                    if (!this.audioContext) return;
+                    const osc1 = this.createOscillator(440, 'sine');
+                    const osc2 = this.createOscillator(880, 'sine');
+                    const gain = this.createGain(0.5 * this.sfxVolume);
+                    
+                    osc1.connect(gain);
+                    osc2.connect(gain);
+                    gain.connect(this.audioContext.destination);
+                    
+                    osc1.frequency.exponentialRampToValueAtTime(880, this.audioContext.currentTime + 0.5);
+                    osc2.frequency.exponentialRampToValueAtTime(1760, this.audioContext.currentTime + 0.5);
+                    
+                    osc1.start();
+                    osc2.start();
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.8);
+                    osc1.stop(this.audioContext.currentTime + 0.8);
+                    osc2.stop(this.audioContext.currentTime + 0.8);
+                };
+            }
+            
+            createBeamSound() {
+                return () => {
+                    if (!this.audioContext) return;
+                    const osc = this.createOscillator(150, 'sawtooth');
+                    const gain = this.createGain(0.4 * this.sfxVolume);
+                    
+                    osc.connect(gain);
+                    gain.connect(this.audioContext.destination);
+                    
+                    osc.frequency.exponentialRampToValueAtTime(80, this.audioContext.currentTime + 0.3);
+                    osc.start();
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.3);
+                    osc.stop(this.audioContext.currentTime + 0.3);
+                };
+            }
+            
+            createCollisionSound() {
+                return () => {
+                    if (!this.audioContext) return;
+                    const osc = this.createOscillator(200 + Math.random() * 100, 'square');
+                    const gain = this.createGain(0.3 * this.sfxVolume);
+                    
+                    osc.connect(gain);
+                    gain.connect(this.audioContext.destination);
+                    
+                    osc.start();
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.05);
+                    osc.stop(this.audioContext.currentTime + 0.05);
+                };
+            }
+            
+            createWarningSound() {
+                return () => {
+                    if (!this.audioContext) return;
+                    const osc = this.createOscillator(800, 'sine');
+                    const gain = this.createGain(0.3 * this.sfxVolume);
+                    
+                    osc.connect(gain);
+                    gain.connect(this.audioContext.destination);
+                    
+                    osc.start();
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.2);
+                    osc.stop(this.audioContext.currentTime + 0.2);
+                };
+            }
+            
+            playSound(soundName) {
+                if (this.sounds[soundName]) {
+                    this.sounds[soundName]();
+                }
+            }
+            
+            setMasterVolume(volume) {
+                this.masterVolume = Math.max(0, Math.min(1, volume));
+            }
+            
+            toggleMute() {
+                this.muted = !this.muted;
+            }
+            
+            startBackgroundMusic() {
+                if (!this.audioContext || this.musicLoop) return;
+                
+                const playMusicLoop = () => {
+                    if (this.muted) {
+                        setTimeout(playMusicLoop, 2000);
+                        return;
+                    }
+                    
+                    // 簡単なアンビエント音楽
+                    const baseFreq = 110; // A2
+                    const osc = this.createOscillator(baseFreq, 'sine');
+                    const gain = this.createGain(0.1 * this.musicVolume);
+                    
+                    osc.connect(gain);
+                    gain.connect(this.audioContext.destination);
+                    
+                    osc.start();
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 3);
+                    osc.stop(this.audioContext.currentTime + 3);
+                    
+                    setTimeout(playMusicLoop, 2000);
+                };
+                
+                playMusicLoop();
+                this.musicLoop = true;
+            }
+        }
+        
+        // グローバルオーディオマネージャー
+        const audioManager = new AudioManager();
         
         // レスポンシブ対応
         function resizeGame() {
@@ -431,9 +670,10 @@
             drillSpeed: 2.5, // 初期速度を2.5倍に増加
             drillDurability: 100,
             drillMaxDurability: 100,
-            beamEnergy: 0, // ビームエネルギー
-            beamMaxEnergy: 100, // 最大ビームエネルギー
-            beamChargeRate: 0.15, // ビーム充電速度
+            oilMoneyStock: 0, // オイルマネーストック数
+            starMode: false, // スター状態フラグ
+            starModeTimer: 0, // スター状態残り時間（秒）
+            starModeDuration: 5, // スター状態継続時間（秒）
             beams: [], // 発射中のビーム
             particles: [],
             rocks: [],
@@ -441,6 +681,7 @@
             magmaPools: [],
             faults: [], // 断層
             oilPockets: [], // オイルポケット
+            oilMoney: [], // オイルマネー
             moles: [], // もぐら
             pipeSegments: [], // ドリルパイプのセグメント
             maxDepth: 0,
@@ -1096,6 +1337,107 @@
             }
         }
 
+        class OilMoney {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.width = 60;
+                this.height = 80;
+                this.collected = false;
+                this.animationTime = 0;
+                this.value = 500 + Math.random() * 500; // 500-1000ポイント
+                this.image = new Image();
+                this.image.src = 'sekiyu_oil_money.png';
+                this.imageLoaded = false;
+                
+                this.image.onload = () => {
+                    this.imageLoaded = true;
+                };
+                
+                // 回転アニメーション
+                this.rotation = 0;
+                this.rotationSpeed = 0.02;
+                
+                // 浮遊アニメーション
+                this.floatOffset = Math.random() * Math.PI * 2;
+                this.floatAmplitude = 10;
+            }
+            
+            update() {
+                this.animationTime++;
+                this.rotation += this.rotationSpeed;
+                
+                // 浮遊効果
+                this.y += Math.sin(this.animationTime * 0.05 + this.floatOffset) * 0.3;
+            }
+            
+            draw() {
+                const screenY = this.y - game.cameraY;
+                
+                if (screenY < -100 || screenY > canvas.height + 100) return;
+                
+                ctx.save();
+                ctx.translate(this.x, screenY);
+                
+                if (this.imageLoaded) {
+                    // 画像を描画
+                    ctx.save();
+                    ctx.rotate(this.rotation);
+                    
+                    // 画像のサイズを調整
+                    const imageWidth = this.width;
+                    const imageHeight = this.height;
+                    
+                    ctx.drawImage(
+                        this.image,
+                        -imageWidth / 2,
+                        -imageHeight / 2,
+                        imageWidth,
+                        imageHeight
+                    );
+                    
+                    ctx.restore();
+                    
+                    // 光る効果
+                    ctx.save();
+                    ctx.globalAlpha = 0.3 + Math.sin(this.animationTime * 0.1) * 0.2;
+                    ctx.shadowBlur = 20;
+                    ctx.shadowColor = '#FFD700';
+                    ctx.fillStyle = 'rgba(255, 215, 0, 0.3)';
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.width / 2 + 10, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                } else {
+                    // 画像が読み込まれていない場合のフォールバック
+                    ctx.fillStyle = '#FFD700';
+                    ctx.strokeStyle = '#FFA500';
+                    ctx.lineWidth = 3;
+                    
+                    // オイルドラム
+                    ctx.fillRect(-this.width/2, -this.height/2, this.width, this.height);
+                    ctx.strokeRect(-this.width/2, -this.height/2, this.width, this.height);
+                    
+                    // "OIL" テキスト
+                    ctx.fillStyle = 'white';
+                    ctx.font = 'bold 16px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('OIL', 0, 5);
+                }
+                
+                // 価値表示
+                ctx.fillStyle = '#00FF00';
+                ctx.font = 'bold 14px Arial';
+                ctx.textAlign = 'center';
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 2;
+                ctx.strokeText(`$${Math.floor(this.value)}`, 0, this.height/2 + 20);
+                ctx.fillText(`$${Math.floor(this.value)}`, 0, this.height/2 + 20);
+                
+                ctx.restore();
+            }
+        }
+
         class Mole {
             constructor(x, y) {
                 this.x = x;
@@ -1531,6 +1873,14 @@
                     ));
                 }
                 
+                // オイルマネー（序盤から出現） - レアアイテム
+                if (game.depth >= 200 && Math.random() < 0.05) {
+                    game.oilMoney.push(new OilMoney(
+                        Math.random() * (canvas.width - 120) + 60,
+                        spawnY + Math.random() * 150
+                    ));
+                }
+                
                 // 断層（2500m以降） - 画面下から出現
                 if (game.depth > 2500) {
                     const faultChance = 0.1 + (game.depth - 2500) / 15000;
@@ -1543,6 +1893,16 @@
         
         function updateGame() {
             if (!game.gameRunning) return;
+
+            // スター状態のタイマー更新
+            if (game.starMode) {
+                game.starModeTimer -= 1/60; // 60FPSを想定
+                if (game.starModeTimer <= 0) {
+                    game.starMode = false;
+                    game.starModeTimer = 0;
+                    console.log('⭐ スター状態終了');
+                }
+            }
 
             // --- START OF NEW EFFECTS ---
 
@@ -1566,6 +1926,11 @@
                     game.drillY + 60, // ドリルの先端より少し下から発生
                     particleType
                 ));
+            }
+            
+            // 掘削音を再生（確率的に）
+            if (Math.random() < 0.1) {
+                audioManager.playSound('drilling');
             }
 
             // 3. Spark generation at high temperatures
@@ -1626,8 +1991,13 @@
             let hitObstacle = false;
             
             // 警告表示
-            document.getElementById('warningText').style.display = 
-                game.temperature > 1000 ? 'block' : 'none';
+            const shouldShowWarning = game.temperature > 1000;
+            document.getElementById('warningText').style.display = shouldShowWarning ? 'block' : 'none';
+            
+            // 高温警告音（たまに再生）
+            if (shouldShowWarning && Math.random() < 0.02) {
+                audioManager.playSound('warning');
+            }
             
             // 地形生成
             generateTerrain();
@@ -1650,6 +2020,9 @@
                     for (let i = 0; i < 5; i++) {
                         game.particles.push(new Particle(mole.x, mole.y, 'rock'));
                     }
+                    
+                    // 衝突音を再生
+                    audioManager.playSound('collision');
                 }
             });
             
@@ -1667,6 +2040,9 @@
                     for (let i = 0; i < 15; i++) {
                         game.particles.push(new Particle(game.drillX, game.drillY + 40, i < 10 ? 'rock' : 'spark'));
                     }
+                    
+                    // 岩石破壊音を再生
+                    audioManager.playSound('rockBreak');
                     
                     // 画面の揺れ効果（強化）
                     canvas.style.transform = `translate(${Math.random() * 20 - 10}px, ${Math.random() * 20 - 10}px)`;
@@ -1705,6 +2081,39 @@
                     console.log(`オイル採掘！耐久度 ${Math.floor(oldDurability)} → ${Math.floor(game.drillDurability)} (+${Math.floor(oilPocket.healAmount)})`);
                 }
             });
+            
+            // オイルマネーとの衝突チェック
+            game.oilMoney.forEach(oilMoney => {
+                oilMoney.update();
+                
+                if (!oilMoney.collected &&
+                    Math.abs(oilMoney.x - game.drillX) < (oilMoney.width/2 + 20) &&
+                    Math.abs(oilMoney.y - game.drillY) < (oilMoney.height/2 + 30)) {
+                    
+                    oilMoney.collected = true;
+                    
+                    // オイルマネーストックに追加
+                    game.oilMoneyStock += 1;
+                    
+                    // 豪華な獲得エフェクト
+                    for (let i = 0; i < 30; i++) {
+                        game.particles.push(new Particle(
+                            oilMoney.x + (Math.random() - 0.5) * 80,
+                            oilMoney.y + (Math.random() - 0.5) * 60,
+                            Math.random() < 0.5 ? 'spark' : 'steam'
+                        ));
+                    }
+                    
+                    // 画面の豪華なフラッシュ効果
+                    canvas.style.filter = 'brightness(1.5) saturate(1.5) hue-rotate(30deg)';
+                    setTimeout(() => canvas.style.filter = '', 800);
+                    
+                    // オイルマネー獲得音を再生
+                    audioManager.playSound('oilMoney');
+                    
+                    console.log(`オイルマネー獲得！ストック数: ${game.oilMoneyStock}`);
+                }
+            });
 
             // 蒸気孔ボーナス
             game.steamVents.forEach(vent => {
@@ -1735,11 +2144,6 @@
                 }
             });
             
-            // ビームエネルギーの充電
-            if (game.beamEnergy < game.beamMaxEnergy) {
-                game.beamEnergy += game.beamChargeRate;
-                game.beamEnergy = Math.min(game.beamEnergy, game.beamMaxEnergy);
-            }
             
             // ビーム更新
             game.beams.forEach(beam => beam.update());
@@ -2063,6 +2467,13 @@
             // オイルポケット
             game.oilPockets.forEach(oilPocket => oilPocket.draw());
             
+            // オイルマネー
+            game.oilMoney.forEach(oilMoney => {
+                if (!oilMoney.collected) {
+                    oilMoney.draw();
+                }
+            });
+            
             // マグマ溜まり
             game.magmaPools.forEach(pool => pool.draw());
             
@@ -2219,19 +2630,25 @@
                 document.getElementById('drillEnergy').style.background = 'linear-gradient(to right, #FF4500, #FFD700)';
             }
             
-            // ビームエネルギーゲージの更新
-            const beamRatio = game.beamEnergy / game.beamMaxEnergy;
-            document.getElementById('beamEnergy').style.width = `${beamRatio * 100}%`;
+            // オイルマネーストック数とスター状態の表示
+            document.getElementById('oilMoneyCount').textContent = game.oilMoneyStock;
             
-            // 泥水ビームエネルギーの色とステータス
-            if (beamRatio >= 1.0) {
-                document.getElementById('beamEnergy').style.background = 'linear-gradient(to right, #8B4513, #A0522D)';
-                document.getElementById('beamStatus').textContent = 'スペースキーで発射！';
-                document.getElementById('beamStatus').style.color = '#D2B48C';
+            // スター状態の表示更新
+            if (game.starMode) {
+                document.getElementById('beamStatus').textContent = `⭐ スター状態 ⭐ (${Math.ceil(game.starModeTimer)}秒)`;
+                document.getElementById('beamStatus').style.color = '#FFD700';
+                document.getElementById('beamEnergy').style.width = `${(game.starModeTimer / game.starModeDuration) * 100}%`;
+                document.getElementById('beamEnergy').style.background = 'linear-gradient(to right, #FFD700, #FFA500)';
+            } else if (game.oilMoneyStock > 0) {
+                document.getElementById('beamStatus').textContent = 'スペースキーでスター状態開始！';
+                document.getElementById('beamStatus').style.color = '#90EE90';
+                document.getElementById('beamEnergy').style.width = '100%';
+                document.getElementById('beamEnergy').style.background = 'linear-gradient(to right, #32CD32, #90EE90)';
             } else {
-                document.getElementById('beamEnergy').style.background = 'linear-gradient(to right, #654321, #8B4513)';
-                document.getElementById('beamStatus').textContent = `充電中... ${Math.floor(beamRatio * 100)}%`;
+                document.getElementById('beamStatus').textContent = 'オイルマネーを集めよう！';
                 document.getElementById('beamStatus').style.color = '#FFFFFF';
+                document.getElementById('beamEnergy').style.width = '0%';
+                document.getElementById('beamEnergy').style.background = 'linear-gradient(to right, #654321, #8B4513)';
             }
         }
         
@@ -2269,9 +2686,10 @@
                 drillSpeed: 2.5, // 初期速度を2.5倍に増加
                 drillDurability: 100,
                 drillMaxDurability: 100,
-                beamEnergy: 0,
-                beamMaxEnergy: 100,
-                beamChargeRate: 0.15,
+                oilMoneyStock: 0,
+                starMode: false,
+                starModeTimer: 0,
+                starModeDuration: 5,
                 cooling: 1,
                 particles: [],
                 rocks: [],
@@ -2279,6 +2697,7 @@
                 magmaPools: [],
                 faults: [], // 断層
                 oilPockets: [], // オイルポケット
+                oilMoney: [], // オイルマネー
                 beams: [], // ビーム
                 moles: [], // もぐら
                 pipeSegments: [], // ドリルパイプのセグメント
@@ -2331,30 +2750,55 @@
         });
         */
         
-        // 泥水ビーム発射関数
-        function fireBeam() {
-            if (game.beamEnergy >= game.beamMaxEnergy && game.gameRunning) {
-                // ドリルから下方向に泥水ビーム発射
-                const beam = new Beam(game.drillX, game.drillY + 60, Math.PI / 2); // 下向き（90度）
+        // スター状態開始/ビーム発射関数
+        function handleSpaceKey() {
+            if (!game.gameRunning) return;
+            
+            if (game.starMode) {
+                // スター状態中：ビーム発射
+                const beam = new Beam(game.drillX, game.drillY + 60, Math.PI / 2);
                 game.beams.push(beam);
                 
-                // エネルギー消費
-                game.beamEnergy = 0;
-                
-                // 泥水発射エフェクト（茶色のパーティクル）
+                // 泥水発射エフェクト
                 for (let i = 0; i < 15; i++) {
                     game.particles.push(new Particle(
                         game.drillX + (Math.random() - 0.5) * 25,
                         game.drillY + 50 + (Math.random() - 0.5) * 25,
-                        Math.random() < 0.7 ? 'rock' : 'steam' // 泥と水蒸気の混合
+                        Math.random() < 0.7 ? 'rock' : 'steam'
                     ));
                 }
                 
-                // 画面効果（茶色がかったフラッシュ）
+                // 画面効果
                 canvas.style.filter = 'brightness(1.3) sepia(0.5) saturate(1.5)';
                 setTimeout(() => canvas.style.filter = '', 150);
                 
-                console.log('泥水ビーム発射！');
+                // ビーム発射音を再生
+                audioManager.playSound('beam');
+                
+                console.log('⭐ スター状態ビーム発射！');
+            } else if (game.oilMoneyStock > 0) {
+                // スター状態開始
+                game.starMode = true;
+                game.starModeTimer = game.starModeDuration;
+                game.oilMoneyStock -= 1;
+                
+                // スター状態開始エフェクト
+                for (let i = 0; i < 50; i++) {
+                    game.particles.push(new Particle(
+                        game.drillX + (Math.random() - 0.5) * 100,
+                        game.drillY + (Math.random() - 0.5) * 100,
+                        'spark'
+                    ));
+                }
+                
+                // 豪華な画面効果
+                canvas.style.filter = 'brightness(1.8) saturate(2) hue-rotate(45deg)';
+                setTimeout(() => canvas.style.filter = '', 1000);
+                
+                // スター状態開始音を再生
+                audioManager.playSound('starMode');
+                
+                console.log('⭐ スター状態開始！ 5秒間無制限ビーム！');
             }
         }
 
@@ -2364,10 +2808,10 @@
                 e.preventDefault();
             }
             
-            // スペースキーで泥水ビーム発射
+            // スペースキーでスター状態開始/ビーム発射
             if (e.key === ' ' || e.code === 'Space') {
                 e.preventDefault();
-                fireBeam();
+                handleSpaceKey();
             }
             
             keys[e.key] = true;
@@ -2443,10 +2887,26 @@
         rightButton.addEventListener('mousedown', () => keys['ArrowRight'] = true);
         rightButton.addEventListener('mouseup', () => keys['ArrowRight'] = false);
         
+        // 音声コントロール
+        document.getElementById('muteButton').addEventListener('click', () => {
+            audioManager.toggleMute();
+            const button = document.getElementById('muteButton');
+            button.textContent = audioManager.muted ? '🔇 音声OFF' : '🔊 音声ON';
+        });
+        
         // ゲーム開始時にリサイズ
         function startGame() {
             document.getElementById('startScreen').style.display = 'none';
             game.gameRunning = true;
+            
+            // AudioContextを開始（ユーザーインタラクション後に必要）
+            if (audioManager.audioContext && audioManager.audioContext.state === 'suspended') {
+                audioManager.audioContext.resume();
+            }
+            
+            // バックグラウンドミュージック開始
+            audioManager.startBackgroundMusic();
+            
             resizeGame(); // リサイズを実行
             gameLoop();
         }
